@@ -1,0 +1,2366 @@
+basePath: /api
+definitions:
+  models.AIConfig:
+    properties:
+      channel_id:
+        type: string
+      created_at:
+        type: string
+      handover_timeout_minutes:
+        type: integer
+      id:
+        type: string
+      is_enabled:
+        type: boolean
+      mode:
+        $ref: '#/definitions/models.AIMode'
+      persona:
+        description: System prompt
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.AIMode:
+    enum:
+    - manual
+    - auto
+    - hybrid
+    type: string
+    x-enum-comments:
+      AIModeAuto: AI replies to everything
+      AIModeHybrid: AI replies unless human took over
+      AIModeManual: AI disabled (default)
+    x-enum-descriptions:
+    - AI disabled (default)
+    - AI replies to everything
+    - AI replies unless human took over
+    x-enum-varnames:
+    - AIModeManual
+    - AIModeAuto
+    - AIModeHybrid
+  models.AssignConversationInput:
+    properties:
+      user_id:
+        type: string
+    required:
+    - user_id
+    type: object
+  models.AuthResponse:
+    properties:
+      access_token:
+        type: string
+      expires_in:
+        type: integer
+      organization:
+        $ref: '#/definitions/models.Organization'
+      user:
+        $ref: '#/definitions/models.UserPublic'
+    type: object
+  models.CannedResponse:
+    properties:
+      content:
+        type: string
+      created_at:
+        type: string
+      created_by:
+        type: string
+      id:
+        type: string
+      organization_id:
+        type: string
+      shortcut:
+        description: e.g., "/greeting"
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.ChannelPublic:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      provider:
+        type: string
+      status:
+        $ref: '#/definitions/models.ChannelStatus'
+      type:
+        $ref: '#/definitions/models.ChannelType'
+    type: object
+  models.ChannelStatus:
+    enum:
+    - active
+    - disconnected
+    - pending
+    type: string
+    x-enum-varnames:
+    - ChannelStatusActive
+    - ChannelStatusDisconnected
+    - ChannelStatusPending
+  models.ChannelType:
+    enum:
+    - whatsapp
+    - instagram
+    - facebook
+    type: string
+    x-enum-varnames:
+    - ChannelWhatsApp
+    - ChannelInstagram
+    - ChannelFacebook
+  models.ConnectFacebookInput:
+    properties:
+      access_token:
+        type: string
+      selected_id:
+        type: string
+    required:
+    - access_token
+    type: object
+  models.ConnectInstagramInput:
+    properties:
+      access_token:
+        type: string
+      selected_id:
+        type: string
+    required:
+    - access_token
+    type: object
+  models.ConnectWhatsAppInput:
+    properties:
+      access_token:
+        type: string
+      selected_id:
+        type: string
+    required:
+    - access_token
+    type: object
+  models.Contact:
+    properties:
+      avatar_url:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      facebook_id:
+        type: string
+      id:
+        type: string
+      instagram_id:
+        type: string
+      metadata:
+        type: object
+      name:
+        type: string
+      organization_id:
+        type: string
+      phone:
+        type: string
+      updated_at:
+        type: string
+      whatsapp_id:
+        description: External IDs for different channels
+        type: string
+    type: object
+  models.Conversation:
+    properties:
+      assigned_to:
+        type: string
+      assigned_user:
+        $ref: '#/definitions/models.UserPublic'
+      channel:
+        allOf:
+        - $ref: '#/definitions/models.ChannelPublic'
+        description: Relations (populated when needed)
+      channel_id:
+        type: string
+      contact:
+        $ref: '#/definitions/models.Contact'
+      contact_id:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      last_human_reply_at:
+        description: Added for AI Hybrid mode
+        type: string
+      last_message:
+        $ref: '#/definitions/models.Message'
+      last_message_at:
+        type: string
+      organization_id:
+        type: string
+      status:
+        $ref: '#/definitions/models.ConversationStatus'
+      subject:
+        type: string
+      unread_count:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  models.ConversationStatus:
+    enum:
+    - open
+    - pending
+    - resolved
+    - closed
+    type: string
+    x-enum-varnames:
+    - ConversationStatusOpen
+    - ConversationStatusPending
+    - ConversationStatusResolved
+    - ConversationStatusClosed
+  models.CreateCannedResponseInput:
+    properties:
+      content:
+        maxLength: 2000
+        minLength: 1
+        type: string
+      shortcut:
+        maxLength: 50
+        minLength: 2
+        type: string
+      title:
+        maxLength: 100
+        minLength: 2
+        type: string
+    required:
+    - content
+    - shortcut
+    - title
+    type: object
+  models.CreateChannelInput:
+    properties:
+      access_token:
+        description: Required for Meta, SID/Token for Twilio
+        type: string
+      business_account_id:
+        type: string
+      facebook_page_id:
+        description: Facebook specific
+        type: string
+      ig_user_id:
+        description: Instagram specific
+        type: string
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      phone_number_id:
+        description: WhatsApp specific
+        type: string
+      provider:
+        description: defaults to meta
+        type: string
+      type:
+        allOf:
+        - $ref: '#/definitions/models.ChannelType'
+        enum:
+        - whatsapp
+        - instagram
+        - facebook
+    required:
+    - name
+    - type
+    type: object
+  models.CreateContactInput:
+    properties:
+      email:
+        type: string
+      facebook_id:
+        type: string
+      instagram_id:
+        type: string
+      name:
+        maxLength: 200
+        minLength: 1
+        type: string
+      phone:
+        type: string
+      whatsapp_id:
+        type: string
+    required:
+    - name
+    type: object
+  models.CreateLabelInput:
+    properties:
+      color:
+        type: string
+      name:
+        maxLength: 50
+        minLength: 1
+        type: string
+    required:
+    - color
+    - name
+    type: object
+  models.InviteUserInput:
+    properties:
+      email:
+        type: string
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      role:
+        allOf:
+        - $ref: '#/definitions/models.UserRole'
+        enum:
+        - admin
+        - supervisor
+        - agent
+    required:
+    - email
+    - name
+    - role
+    type: object
+  models.KnowledgeBaseItem:
+    properties:
+      channel_id:
+        type: string
+      content:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      metadata:
+        additionalProperties: {}
+        type: object
+    type: object
+  models.Label:
+    properties:
+      color:
+        description: Hex color code
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      organization_id:
+        type: string
+    type: object
+  models.LoginInput:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  models.Message:
+    properties:
+      content:
+        type: string
+      conversation_id:
+        type: string
+      created_at:
+        type: string
+      external_id:
+        description: WhatsApp/IG message ID
+        type: string
+      id:
+        type: string
+      media_file_name:
+        type: string
+      media_mime_type:
+        type: string
+      media_url:
+        type: string
+      message_type:
+        $ref: '#/definitions/models.MessageType'
+      reply_to:
+        $ref: '#/definitions/models.Message'
+      reply_to_id:
+        type: string
+      sender:
+        allOf:
+        - $ref: '#/definitions/models.UserPublic'
+        description: Relations
+      sender_id:
+        description: Contact ID or User ID
+        type: string
+      sender_type:
+        $ref: '#/definitions/models.SenderType'
+      status:
+        $ref: '#/definitions/models.MessageStatus'
+      updated_at:
+        type: string
+    type: object
+  models.MessageList:
+    properties:
+      has_more:
+        type: boolean
+      messages:
+        items:
+          $ref: '#/definitions/models.Message'
+        type: array
+      total_count:
+        type: integer
+    type: object
+  models.MessageStatus:
+    enum:
+    - pending
+    - sent
+    - delivered
+    - read
+    - failed
+    type: string
+    x-enum-varnames:
+    - MessageStatusPending
+    - MessageStatusSent
+    - MessageStatusDelivered
+    - MessageStatusRead
+    - MessageStatusFailed
+  models.MessageType:
+    enum:
+    - text
+    - image
+    - video
+    - audio
+    - document
+    - sticker
+    - template
+    - reaction
+    type: string
+    x-enum-varnames:
+    - MessageTypeText
+    - MessageTypeImage
+    - MessageTypeVideo
+    - MessageTypeAudio
+    - MessageTypeDocument
+    - MessageTypeSticker
+    - MessageTypeTemplate
+    - MessageTypeReaction
+  models.Organization:
+    properties:
+      ai_credits_limit:
+        type: integer
+      ai_credits_used:
+        type: integer
+      billing_cycle_start:
+        type: string
+      channel_count:
+        type: integer
+      created_at:
+        type: string
+      id:
+        type: string
+      is_over_limit:
+        description: UI helper fields (computed)
+        type: boolean
+      message_usage_limit:
+        description: -1 for unlimited
+        type: integer
+      message_usage_used:
+        type: integer
+      name:
+        type: string
+      plan:
+        type: string
+      slug:
+        type: string
+      subscription_status:
+        type: string
+      updated_at:
+        type: string
+      user_count:
+        type: integer
+    type: object
+  models.RegisterInput:
+    properties:
+      email:
+        type: string
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      organization_name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      password:
+        minLength: 8
+        type: string
+    required:
+    - email
+    - name
+    - organization_name
+    - password
+    type: object
+  models.SendMessageInput:
+    properties:
+      content:
+        maxLength: 500
+        type: string
+      is_note:
+        type: boolean
+      media_url:
+        type: string
+      message_type:
+        allOf:
+        - $ref: '#/definitions/models.MessageType'
+        enum:
+        - text
+        - image
+        - video
+        - audio
+        - document
+      reply_to_id:
+        type: string
+    required:
+    - message_type
+    type: object
+  models.SenderType:
+    description: who sent the message
+    enum:
+    - contact
+    - agent
+    - system
+    - ai
+    - note
+    type: string
+    x-enum-varnames:
+    - SenderContact
+    - SenderAgent
+    - SenderSystem
+    - SenderAI
+    - SenderNote
+  models.UpdateContactInput:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+    type: object
+  models.UpdateConversationStatusInput:
+    properties:
+      status:
+        allOf:
+        - $ref: '#/definitions/models.ConversationStatus'
+        enum:
+        - open
+        - pending
+        - resolved
+        - closed
+    required:
+    - status
+    type: object
+  models.UpdateUserInput:
+    properties:
+      avatar_url:
+        type: string
+      name:
+        type: string
+    type: object
+  models.UserPublic:
+    properties:
+      avatar_url:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      role:
+        $ref: '#/definitions/models.UserRole'
+      status:
+        $ref: '#/definitions/models.UserStatus'
+    type: object
+  models.UserRole:
+    enum:
+    - admin
+    - supervisor
+    - agent
+    type: string
+    x-enum-varnames:
+    - RoleAdmin
+    - RoleSupervisor
+    - RoleAgent
+  models.UserStatus:
+    enum:
+    - online
+    - away
+    - offline
+    type: string
+    x-enum-varnames:
+    - StatusOnline
+    - StatusAway
+    - StatusOffline
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: This is the API server for the Omnichannel Chat Platform.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Omnichannel Chat Platform API
+  version: "1.0"
+paths:
+  /api/channels/{id}/ai:
+    get:
+      consumes:
+      - application/json
+      description: Returns the AI configuration for a specific channel
+      parameters:
+      - description: Channel ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.AIConfig'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get AI Config
+      tags:
+      - ai
+    put:
+      consumes:
+      - application/json
+      description: Updates the AI configuration for a specific channel
+      parameters:
+      - description: Channel ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: AI Config Input
+        in: body
+        name: input
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.AIConfig'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update AI Config
+      tags:
+      - ai
+  /api/channels/{id}/ai/knowledge:
+    get:
+      consumes:
+      - application/json
+      description: Returns all items in the knowledge base for a specific channel
+      parameters:
+      - description: Channel ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.KnowledgeBaseItem'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: List Knowledge
+      tags:
+      - ai
+    post:
+      consumes:
+      - application/json
+      description: Adds a new item to the knowledge base for a specific channel
+      parameters:
+      - description: Channel ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Knowledge Input
+        in: body
+        name: input
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Add Knowledge
+      tags:
+      - ai
+  /api/channels/{id}/ai/knowledge/{kid}:
+    delete:
+      consumes:
+      - application/json
+      description: Removes an item from the knowledge base
+      parameters:
+      - description: Channel ID (Ignored but in path)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Knowledge ID
+        in: path
+        name: kid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete Knowledge
+      tags:
+      - ai
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing knowledge base item
+      parameters:
+      - description: Channel ID (Ignored but in path)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Knowledge ID
+        in: path
+        name: kid
+        required: true
+        type: string
+      - description: Knowledge Input
+        in: body
+        name: input
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update Knowledge
+      tags:
+      - ai
+  /api/channels/{id}/ai/test:
+    post:
+      consumes:
+      - application/json
+      description: Generates an AI reply for a given query using the current config
+        and knowledge base
+      parameters:
+      - description: Channel ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Query Input
+        in: body
+        name: input
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Test AI Reply
+      tags:
+      - ai
+  /api/webhooks:
+    get:
+      description: Meta webhook verification endpoint (Hub Challenge)
+      parameters:
+      - description: Mode
+        in: query
+        name: hub.mode
+        type: string
+      - description: Verify Token
+        in: query
+        name: hub.verify_token
+        type: string
+      - description: Challenge
+        in: query
+        name: hub.challenge
+        type: string
+      responses:
+        "200":
+          description: Challenge string
+          schema:
+            type: string
+        "403":
+          description: Forbidden
+          schema:
+            type: string
+      summary: Verify Webhook
+      tags:
+      - webhook
+    post:
+      consumes:
+      - application/json
+      description: Receives and processes incoming messages from WhatsApp/Instagram
+      parameters:
+      - description: Meta Webhook Payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Handle Webhook
+      tags:
+      - webhook
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Login with email and password to get access token
+      parameters:
+      - description: Login Input
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.LoginInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Login user
+      tags:
+      - auth
+  /auth/me:
+    get:
+      description: Get the currently logged in user profile
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.UserPublic'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get current user
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user and organization
+      parameters:
+      - description: Register Input
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.RegisterInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Register a new user
+      tags:
+      - auth
+  /canned-responses:
+    get:
+      description: Get a list of canned responses
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              items:
+                $ref: '#/definitions/models.CannedResponse'
+              type: array
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List canned responses
+      tags:
+      - canned-responses
+    post:
+      consumes:
+      - application/json
+      description: Add a new quick reply template
+      parameters:
+      - description: Response Info
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateCannedResponseInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.CannedResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create canned response
+      tags:
+      - canned-responses
+  /canned-responses/{id}:
+    delete:
+      description: Remove a canned response
+      parameters:
+      - description: Response ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete canned response
+      tags:
+      - canned-responses
+    put:
+      consumes:
+      - application/json
+      description: Update a canned response
+      parameters:
+      - description: Response ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Response Info
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateCannedResponseInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.CannedResponse'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update canned response
+      tags:
+      - canned-responses
+  /canned-responses/search:
+    get:
+      description: Search canned responses by shortcut or content
+      parameters:
+      - description: Search query
+        in: query
+        name: q
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              items:
+                $ref: '#/definitions/models.CannedResponse'
+              type: array
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Search canned responses
+      tags:
+      - canned-responses
+  /channels:
+    get:
+      description: Get a list of connected channels (WhatsApp, Instagram)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              items:
+                $ref: '#/definitions/models.ChannelPublic'
+              type: array
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List channels
+      tags:
+      - channels
+    post:
+      consumes:
+      - application/json
+      description: Connect a new channel (WhatsApp/Instagram) (Admin only)
+      parameters:
+      - description: Channel Config
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateChannelInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.ChannelPublic'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create channel
+      tags:
+      - channels
+  /channels/{id}:
+    delete:
+      description: Remove a channel connection (Admin only)
+      parameters:
+      - description: Channel ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete channel
+      tags:
+      - channels
+    get:
+      description: Get details of a specific channel
+      parameters:
+      - description: Channel ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ChannelPublic'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get channel
+      tags:
+      - channels
+  /channels/{id}/activate:
+    post:
+      description: Manually activate a channel (Admin only)
+      parameters:
+      - description: Channel ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Activate channel
+      tags:
+      - channels
+  /channels/connect/instagram:
+    post:
+      consumes:
+      - application/json
+      description: Automatically connect an Instagram channel using Facebook Login
+        token
+      parameters:
+      - description: Access Token
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.ConnectInstagramInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ChannelPublic'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Connect Instagram
+      tags:
+      - channels
+  /channels/discover/meta:
+    post:
+      consumes:
+      - application/json
+      description: Get a list of available Facebook Pages, Instagram accounts, and
+        WhatsApp numbers for a token
+      parameters:
+      - description: Access Token
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.ConnectFacebookInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Discover Meta accounts
+      tags:
+      - channels
+  /channels/facebook/connect:
+    post:
+      consumes:
+      - application/json
+      description: Automatically discover and connect Facebook pages using a user
+        access token
+      parameters:
+      - description: Access Token
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.ConnectFacebookInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ChannelPublic'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Connect Facebook
+      tags:
+      - channels
+  /channels/whatsapp/connect:
+    post:
+      consumes:
+      - application/json
+      description: Automatically discover and connect WhatsApp accounts using a user
+        access token
+      parameters:
+      - description: Access Token
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.ConnectWhatsAppInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ChannelPublic'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Connect WhatsApp
+      tags:
+      - channels
+  /contacts:
+    get:
+      description: Get a list of customer contacts
+      parameters:
+      - description: Search by name, email, phone
+        in: query
+        name: search
+        type: string
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 20)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List contacts
+      tags:
+      - contacts
+    post:
+      consumes:
+      - application/json
+      description: Add a new customer contact
+      parameters:
+      - description: Contact Info
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateContactInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Contact'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create contact
+      tags:
+      - contacts
+  /contacts/{id}:
+    delete:
+      description: Remove a contact
+      parameters:
+      - description: Contact ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete contact
+      tags:
+      - contacts
+    get:
+      description: Get details of a specific contact
+      parameters:
+      - description: Contact ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Contact'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get contact
+      tags:
+      - contacts
+    patch:
+      consumes:
+      - application/json
+      description: Update contact details
+      parameters:
+      - description: Contact ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Contact Info
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateContactInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Contact'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update contact
+      tags:
+      - contacts
+  /contacts/{id}/conversations:
+    get:
+      description: Get history of conversations with a contact
+      parameters:
+      - description: Contact ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              items:
+                $ref: '#/definitions/models.Conversation'
+              type: array
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get contact conversations
+      tags:
+      - contacts
+  /conversations:
+    get:
+      description: Get a list of conversations with filtering and pagination
+      parameters:
+      - description: Filter by status (open, pending, resolved, closed)
+        in: query
+        name: status
+        type: string
+      - description: Filter by channel ID
+        in: query
+        name: channel_id
+        type: string
+      - description: Filter by assigned user ID
+        in: query
+        name: assigned_to
+        type: string
+      - description: Filter specific unassigned conversations
+        in: query
+        name: unassigned
+        type: boolean
+      - description: Search by customer name or subject
+        in: query
+        name: search
+        type: string
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 20)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List conversations
+      tags:
+      - conversations
+  /conversations/{id}:
+    delete:
+      description: Delete a conversation
+      parameters:
+      - description: Conversation ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete conversation
+      tags:
+      - conversations
+    get:
+      description: Get details of a specific conversation
+      parameters:
+      - description: Conversation ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Conversation'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get conversation
+      tags:
+      - conversations
+  /conversations/{id}/assign:
+    post:
+      consumes:
+      - application/json
+      description: Assign a conversation to a specific agent
+      parameters:
+      - description: Conversation ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Assignment Input
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.AssignConversationInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Assign conversation
+      tags:
+      - conversations
+  /conversations/{id}/messages:
+    get:
+      description: Get messages history for a conversation
+      parameters:
+      - description: Conversation ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Get messages before this date (ISO8601)
+        in: query
+        name: before
+        type: string
+      - description: Get messages after this date (ISO8601)
+        in: query
+        name: after
+        type: string
+      - description: Limit number of messages (default 20)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MessageList'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get messages
+      tags:
+      - conversations
+    post:
+      consumes:
+      - application/json
+      description: Send a new message to the contact
+      parameters:
+      - description: Conversation ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Message content
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.SendMessageInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Message'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Send message
+      tags:
+      - conversations
+  /conversations/{id}/status:
+    patch:
+      consumes:
+      - application/json
+      description: Change the status of a conversation (open, pending, resolved, closed)
+      parameters:
+      - description: Conversation ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Status Input
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateConversationStatusInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update conversation status
+      tags:
+      - conversations
+  /conversations/{id}/suggest:
+    post:
+      description: Generate an AI suggestion for the current conversation
+      parameters:
+      - description: Conversation ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "402":
+          description: Payment Required
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Suggest AI response
+      tags:
+      - conversations
+  /labels:
+    get:
+      description: Get all conversation labels
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              items:
+                $ref: '#/definitions/models.Label'
+              type: array
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List labels
+      tags:
+      - labels
+    post:
+      consumes:
+      - application/json
+      description: Create a new conversation label
+      parameters:
+      - description: Label Info
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateLabelInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Label'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create label
+      tags:
+      - labels
+  /labels/{id}:
+    delete:
+      description: Delete a conversation label
+      parameters:
+      - description: Label ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete label
+      tags:
+      - labels
+    put:
+      consumes:
+      - application/json
+      description: Update a conversation label
+      parameters:
+      - description: Label ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Label Info
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateLabelInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Label'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update label
+      tags:
+      - labels
+  /team/members:
+    get:
+      description: Get all users in the organization
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              items:
+                $ref: '#/definitions/models.UserPublic'
+              type: array
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List team members
+      tags:
+      - team
+    post:
+      consumes:
+      - application/json
+      description: Create a new user/agent (Admin only)
+      parameters:
+      - description: Invite Info
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.InviteUserInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.UserPublic'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Invite team member
+      tags:
+      - team
+  /team/members/{id}:
+    delete:
+      description: Delete a team member (Admin only)
+      parameters:
+      - description: Member ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Remove team member
+      tags:
+      - team
+    get:
+      description: Get details of a team member
+      parameters:
+      - description: Member ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.UserPublic'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get team member
+      tags:
+      - team
+    patch:
+      consumes:
+      - application/json
+      description: Update details of a team member (Supervisor/Admin)
+      parameters:
+      - description: Member ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update Info
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateUserInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.UserPublic'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update team member
+      tags:
+      - team
+  /team/members/{id}/role:
+    patch:
+      consumes:
+      - application/json
+      description: Promote or demote a team member (Admin only)
+      parameters:
+      - description: Member ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: New Role (admin, supervisor, agent)
+        in: body
+        name: role
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update member role
+      tags:
+      - team
+  /team/organization:
+    get:
+      description: Get organization details
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Organization'
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get organization
+      tags:
+      - team
+    patch:
+      consumes:
+      - application/json
+      description: Update organization name or plan (Admin only)
+      parameters:
+      - description: Update Info
+        in: body
+        name: input
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Organization'
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update organization
+      tags:
+      - team
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
