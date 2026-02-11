@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/sidji-omnichannel/sidji-omnichannel/internal/config"
+	"github.com/sidji-omnichannel/internal/config"
 )
 
 const (

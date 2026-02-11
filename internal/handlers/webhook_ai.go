@@ -141,7 +141,7 @@ func (h *WebhookHandler) processAIMessage(channelID uuid.UUID, contactID uuid.UU
 			message.Sender = &models.UserPublic{
 				ID:     channel.ID,
 				Name:   "AI Assistant",
-				Email:  "ai@omnichat.internal",
+				Email:  "ai@sidji.internal",
 				Role:   models.RoleAgent,
 				Status: models.StatusOnline,
 			}

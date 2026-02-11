@@ -20,7 +20,7 @@ func TestDB(t *testing.T) *sql.DB {
 	// Use test database from environment or default
 	dbURL := os.Getenv("TEST_DATABASE_URL")
 	if dbURL == "" {
-		dbURL = "postgres://omnichat:omnichat123@localhost:5433/omnichat_test?sslmode=disable"
+		dbURL = "postgres://sidji:sidji123@localhost:5433/sidji_test?sslmode=disable"
 	}
 
 	db, err := sql.Open("postgres", dbURL)
@@ -46,9 +46,9 @@ func TestConfig() *config.Config {
 		Database: config.DatabaseConfig{
 			Host:     "localhost",
 			Port:     5433,
-			User:     "omnichat",
-			Password: "omnichat123",
-			Name:     "omnichat_test",
+			User:     "sidji",
+			Password: "sidji123",
+			Name:     "sidji_test",
 		},
 	}
 }

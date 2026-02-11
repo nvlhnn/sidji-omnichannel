@@ -13,6 +13,7 @@ import (
 	"github.com/sidji-omnichannel/internal/database"
 	"github.com/sidji-omnichannel/internal/handlers"
 	"github.com/sidji-omnichannel/internal/middleware"
+	"github.com/sidji-omnichannel/internal/models"
 	"github.com/sidji-omnichannel/internal/services"
 	"github.com/sidji-omnichannel/internal/websocket"
 	swaggerFiles "github.com/swaggo/files"
@@ -172,13 +173,13 @@ func main() {
 			{
 				channels.GET("", channelHandler.List)
 				channels.GET("/:id", channelHandler.Get)
-				channels.POST("", middleware.RequireRole("admin"), channelHandler.Create)
+				channels.POST("", middleware.RequireRole(models.RoleAdmin), channelHandler.Create)
 				channels.POST("/instagram/connect", channelHandler.ConnectInstagram)
 				channels.POST("/whatsapp/connect", channelHandler.ConnectWhatsApp)
 				channels.POST("/facebook/connect", channelHandler.ConnectFacebook)
 				channels.POST("/discover/meta", channelHandler.DiscoverMeta)
-				channels.DELETE("/:id", middleware.RequireRole("admin"), channelHandler.Delete)
-				channels.POST("/:id/activate", middleware.RequireRole("admin"), channelHandler.Activate)
+				channels.DELETE("/:id", middleware.RequireRole(models.RoleAdmin), channelHandler.Delete)
+				channels.POST("/:id/activate", middleware.RequireRole(models.RoleAdmin), channelHandler.Activate)
 			}
 
 			// Contacts
@@ -196,13 +197,13 @@ func main() {
 			team := protected.Group("/team")
 			{
 				team.GET("/organization", teamHandler.GetOrganization)
-				team.PATCH("/organization", middleware.RequireRole("admin"), teamHandler.UpdateOrganization)
+				team.PATCH("/organization", middleware.RequireRole(models.RoleAdmin), teamHandler.UpdateOrganization)
 				team.GET("/members", teamHandler.ListMembers)
 				team.GET("/members/:id", teamHandler.GetMember)
-				team.POST("/members", middleware.RequireRole("admin"), teamHandler.InviteMember)
+				team.POST("/members", middleware.RequireRole(models.RoleAdmin), teamHandler.InviteMember)
 				team.PATCH("/members/:id", teamHandler.UpdateMember)
-				team.PATCH("/members/:id/role", middleware.RequireRole("admin"), teamHandler.UpdateMemberRole)
-				team.DELETE("/members/:id", middleware.RequireRole("admin"), teamHandler.RemoveMember)
+				team.PATCH("/members/:id/role", middleware.RequireRole(models.RoleAdmin), teamHandler.UpdateMemberRole)
+				team.DELETE("/members/:id", middleware.RequireRole(models.RoleAdmin), teamHandler.RemoveMember)
 			}
 
 			// Canned responses

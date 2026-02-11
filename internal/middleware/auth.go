@@ -61,40 +61,48 @@ func Auth(cfg *config.AppConfig) gin.HandlerFunc {
 
 // GetUserID extracts user ID from context
 func GetUserID(c *gin.Context) uuid.UUID {
-	if id, exists := c.Get("user_id"); exists {
-		return id.(uuid.UUID)
+	if val, exists := c.Get("user_id"); exists {
+		if id, ok := val.(uuid.UUID); ok {
+			return id
+		}
 	}
 	return uuid.Nil
 }
 
 // GetOrganizationID extracts organization ID from context
 func GetOrganizationID(c *gin.Context) uuid.UUID {
-	if id, exists := c.Get("organization_id"); exists {
-		return id.(uuid.UUID)
+	if val, exists := c.Get("organization_id"); exists {
+		if id, ok := val.(uuid.UUID); ok {
+			return id
+		}
 	}
 	return uuid.Nil
 }
 
 // GetUserRole extracts user role from context
-func GetUserRole(c *gin.Context) string {
-	if role, exists := c.Get("role"); exists {
-		return role.(string)
+func GetUserRole(c *gin.Context) models.UserRole {
+	if val, exists := c.Get("role"); exists {
+		if role, ok := val.(models.UserRole); ok {
+			return role
+		}
+		if roleStr, ok := val.(string); ok {
+			return models.UserRole(roleStr)
+		}
 	}
 	return ""
 }
 
 // RequireRole middleware checks if user has required role
-func RequireRole(roles ...string) gin.HandlerFunc {
+func RequireRole(roles ...models.UserRole) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userRole, exists := c.Get("role")
-		if !exists {
+		role := GetUserRole(c)
+		if role == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"error": "Unauthorized",
 			})
 			return
 		}
 
-		role := userRole.(string)
 		for _, r := range roles {
 			if role == r {
 				c.Next()

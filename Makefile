@@ -4,6 +4,8 @@
 BINARY_NAME=sidji-omnichannel
 MAIN_PATH=cmd/server/main.go
 DOCKER_COMPOSE=docker-compose
+POSTGRES_CONTAINER=omnichat-postgres
+REDIS_CONTAINER=omnichat-redis
 
 # Go commands
 GOCMD=go
@@ -40,25 +42,25 @@ deps:
 
 ## Run all tests
 test:
-	TEST_DATABASE_URL=$(TEST_DB_URL) $(GOTEST) -v ./...
+	TEST_DATABASE_URL=$(TEST_DB_URL) $(GOTEST) -p 1 -v ./...
 
 ## Run tests with coverage
 test-coverage:
-	TEST_DATABASE_URL=$(TEST_DB_URL) $(GOTEST) -v -coverprofile=coverage.out ./...
+	TEST_DATABASE_URL=$(TEST_DB_URL) $(GOTEST) -p 1 -v -coverprofile=coverage.out ./...
 	$(GOCMD) tool cover -html=coverage.out -o coverage.html
 	@echo "Coverage report generated at coverage.html"
 
 ## Run tests in verbose mode
 test-verbose:
-	TEST_DATABASE_URL=$(TEST_DB_URL) $(GOTEST) -v -count=1 ./...
+	TEST_DATABASE_URL=$(TEST_DB_URL) $(GOTEST) -p 1 -v -count=1 ./...
 
 ## Run only service tests
 test-services:
-	TEST_DATABASE_URL=$(TEST_DB_URL) $(GOTEST) -v ./internal/services/...
+	TEST_DATABASE_URL=$(TEST_DB_URL) $(GOTEST) -p 1 -v ./internal/services/...
 
 ## Run only handler tests
 test-handlers:
-	TEST_DATABASE_URL=$(TEST_DB_URL) $(GOTEST) -v ./internal/handlers/...
+	TEST_DATABASE_URL=$(TEST_DB_URL) $(GOTEST) -p 1 -v ./internal/handlers/...
 
 ## Run a specific test
 test-one:
@@ -68,10 +70,15 @@ test-one:
 ## Setup test database
 setup-test-db:
 	@echo "Creating test database..."
-	docker exec sidji-omnichannel-postgres psql -U sidji -c "DROP DATABASE IF EXISTS sidji_test;"
-	docker exec sidji-omnichannel-postgres psql -U sidji -c "CREATE DATABASE sidji_test;"
-	docker exec sidji-omnichannel-postgres psql -U sidji -d sidji_test -f /docker-entrypoint-initdb.d/001_initial_schema.up.sql || \
-		docker exec -i sidji-omnichannel-postgres psql -U sidji -d sidji_test < scripts/setup_test_db.sql
+	docker exec $(POSTGRES_CONTAINER) psql -U sidji -c "DROP DATABASE IF EXISTS sidji_test;"
+	docker exec $(POSTGRES_CONTAINER) psql -U sidji -c "CREATE DATABASE sidji_test;"
+	docker exec $(POSTGRES_CONTAINER) psql -U sidji -d sidji_test -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";"
+	docker exec $(POSTGRES_CONTAINER) psql -U sidji -d sidji_test -c "CREATE EXTENSION IF NOT EXISTS vector;"
+	@for %%f in (migrations\*.up.sql) do ( \
+		echo Applying %%f... & \
+		docker exec -i $(POSTGRES_CONTAINER) psql -U sidji -d sidji_test < %%f \
+	)
+	@echo "Test database ready!"
 	@echo "Test database ready!"
 
 ## Docker commands
@@ -87,7 +94,7 @@ docker-logs:
 ## Run database migrations
 migrate:
 	@echo "Running migrations..."
-	docker exec -i sidji-omnichannel-postgres psql -U sidji -d sidji < migrations/001_initial_schema.up.sql
+	docker exec -i $(POSTGRES_CONTAINER) psql -U sidji -d sidji < migrations/001_initial_schema.up.sql
 	@echo "Migrations complete!"
 
 ## Generate Swagger documentation
