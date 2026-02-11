@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/sidji-omnichannel/internal/domain/ports/service"
 	"github.com/sidji-omnichannel/internal/middleware"
 	"github.com/sidji-omnichannel/internal/models"
 	"github.com/sidji-omnichannel/internal/services"
@@ -12,11 +13,11 @@ import (
 
 // CannedResponseHandler handles canned response endpoints
 type CannedResponseHandler struct {
-	cannedService *services.CannedResponseService
+	cannedService service.CannedResponseService
 }
 
 // NewCannedResponseHandler creates a new canned response handler
-func NewCannedResponseHandler(cannedService *services.CannedResponseService) *CannedResponseHandler {
+func NewCannedResponseHandler(cannedService service.CannedResponseService) *CannedResponseHandler {
 	return &CannedResponseHandler{cannedService: cannedService}
 }
 
@@ -179,11 +180,11 @@ func (h *CannedResponseHandler) Delete(c *gin.Context) {
 
 // LabelHandler handles label endpoints
 type LabelHandler struct {
-	labelService *services.LabelService
+	labelService service.LabelService
 }
 
 // NewLabelHandler creates a new label handler
-func NewLabelHandler(labelService *services.LabelService) *LabelHandler {
+func NewLabelHandler(labelService service.LabelService) *LabelHandler {
 	return &LabelHandler{labelService: labelService}
 }
 

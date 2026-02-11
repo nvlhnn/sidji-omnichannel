@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/sidji-omnichannel/internal/domain/ports/service"
 	"github.com/sidji-omnichannel/internal/middleware"
 	"github.com/sidji-omnichannel/internal/models"
 	"github.com/sidji-omnichannel/internal/services"
@@ -13,11 +14,11 @@ import (
 
 // TeamHandler handles team management endpoints
 type TeamHandler struct {
-	teamService *services.TeamService
+	teamService service.TeamService
 }
 
 // NewTeamHandler creates a new team handler
-func NewTeamHandler(teamService *services.TeamService) *TeamHandler {
+func NewTeamHandler(teamService service.TeamService) *TeamHandler {
 	return &TeamHandler{teamService: teamService}
 }
 

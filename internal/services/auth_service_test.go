@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/sidji-omnichannel/internal/adapters/db/postgres"
 	"github.com/sidji-omnichannel/internal/models"
 	"github.com/sidji-omnichannel/internal/testutil"
 )
@@ -14,7 +15,7 @@ func TestAuthService_Register(t *testing.T) {
 	defer testutil.CleanupTestData(t, db)
 
 	cfg := testutil.TestConfig()
-	service := NewAuthService(db, cfg)
+	service := NewAuthService(postgres.NewAuthRepository(db), cfg)
 
 	tests := []struct {
 		name    string
@@ -95,7 +96,7 @@ func TestAuthService_Login(t *testing.T) {
 	defer testutil.CleanupTestData(t, db)
 
 	cfg := testutil.TestConfig()
-	service := NewAuthService(db, cfg)
+	service := NewAuthService(postgres.NewAuthRepository(db), cfg)
 
 	// Create a user first
 	registerInput := &models.RegisterInput{
@@ -177,7 +178,7 @@ func TestAuthService_GetUserByID(t *testing.T) {
 	defer testutil.CleanupTestData(t, db)
 
 	cfg := testutil.TestConfig()
-	service := NewAuthService(db, cfg)
+	service := NewAuthService(postgres.NewAuthRepository(db), cfg)
 
 	// Create a user
 	registerInput := &models.RegisterInput{

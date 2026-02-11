@@ -5,17 +5,18 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/sidji-omnichannel/internal/domain/ports/service"
 	"github.com/sidji-omnichannel/internal/models"
 	"github.com/sidji-omnichannel/internal/services"
 )
 
 // AuthHandler handles authentication endpoints
 type AuthHandler struct {
-	authService *services.AuthService
+	authService service.AuthService
 }
 
 // NewAuthHandler creates a new auth handler
-func NewAuthHandler(authService *services.AuthService) *AuthHandler {
+func NewAuthHandler(authService service.AuthService) *AuthHandler {
 	return &AuthHandler{authService: authService}
 }
 

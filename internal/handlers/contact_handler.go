@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/sidji-omnichannel/internal/domain/ports/service"
 	"github.com/sidji-omnichannel/internal/middleware"
 	"github.com/sidji-omnichannel/internal/models"
 	"github.com/sidji-omnichannel/internal/services"
@@ -13,11 +14,11 @@ import (
 
 // ContactHandler handles contact management endpoints
 type ContactHandler struct {
-	contactService *services.ContactService
+	contactService service.ContactService
 }
 
 // NewContactHandler creates a new contact handler
-func NewContactHandler(contactService *services.ContactService) *ContactHandler {
+func NewContactHandler(contactService service.ContactService) *ContactHandler {
 	return &ContactHandler{contactService: contactService}
 }
 

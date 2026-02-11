@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sidji-omnichannel/internal/adapters/db/postgres"
 	"github.com/sidji-omnichannel/internal/models"
 	"github.com/sidji-omnichannel/internal/services"
 	"github.com/sidji-omnichannel/internal/testutil"
@@ -23,7 +24,7 @@ func TestAuthHandler_Register(t *testing.T) {
 	defer testutil.CleanupTestData(t, db)
 
 	cfg := testutil.TestConfig()
-	authService := services.NewAuthService(db, cfg)
+	authService := services.NewAuthService(postgres.NewAuthRepository(db), cfg)
 	handler := NewAuthHandler(authService)
 
 	tests := []struct {
@@ -95,7 +96,7 @@ func TestAuthHandler_Login(t *testing.T) {
 	defer testutil.CleanupTestData(t, db)
 
 	cfg := testutil.TestConfig()
-	authService := services.NewAuthService(db, cfg)
+	authService := services.NewAuthService(postgres.NewAuthRepository(db), cfg)
 	handler := NewAuthHandler(authService)
 
 	// Create a user first
@@ -182,7 +183,7 @@ func TestAuthHandler_Me(t *testing.T) {
 	defer testutil.CleanupTestData(t, db)
 
 	cfg := testutil.TestConfig()
-	authService := services.NewAuthService(db, cfg)
+	authService := services.NewAuthService(postgres.NewAuthRepository(db), cfg)
 	handler := NewAuthHandler(authService)
 
 	// Create a user

@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/sidji-omnichannel/internal/domain/ports/service"
 	"github.com/sidji-omnichannel/internal/middleware"
 	"github.com/sidji-omnichannel/internal/models"
 	"github.com/sidji-omnichannel/internal/services"
@@ -13,11 +14,11 @@ import (
 
 // ChannelHandler handles channel management endpoints
 type ChannelHandler struct {
-	channelService *services.ChannelService
+	channelService service.ChannelService
 }
 
 // NewChannelHandler creates a new channel handler
-func NewChannelHandler(channelService *services.ChannelService) *ChannelHandler {
+func NewChannelHandler(channelService service.ChannelService) *ChannelHandler {
 	return &ChannelHandler{channelService: channelService}
 }
 

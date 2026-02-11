@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/sidji-omnichannel/internal/adapters/db/postgres"
 	"github.com/sidji-omnichannel/internal/models"
 	"github.com/sidji-omnichannel/internal/testutil"
 )
@@ -18,7 +19,8 @@ func TestContactService_List(t *testing.T) {
 	testutil.CreateTestContact(t, db, org.ID)
 	testutil.CreateTestContact(t, db, org.ID)
 
-	service := NewContactService(db)
+	repo := postgres.NewContactRepository(db)
+	service := NewContactService(repo)
 
 	tests := []struct {
 		name      string
@@ -84,7 +86,8 @@ func TestContactService_GetByID(t *testing.T) {
 	org := testutil.CreateTestOrganization(t, db)
 	contact := testutil.CreateTestContact(t, db, org.ID)
 
-	service := NewContactService(db)
+	repo := postgres.NewContactRepository(db)
+	service := NewContactService(repo)
 
 	tests := []struct {
 		name      string
@@ -144,7 +147,8 @@ func TestContactService_Create(t *testing.T) {
 	// Setup test data
 	org := testutil.CreateTestOrganization(t, db)
 
-	service := NewContactService(db)
+	repo := postgres.NewContactRepository(db)
+	service := NewContactService(repo)
 
 	tests := []struct {
 		name    string
@@ -205,7 +209,8 @@ func TestContactService_Update(t *testing.T) {
 	org := testutil.CreateTestOrganization(t, db)
 	contact := testutil.CreateTestContact(t, db, org.ID)
 
-	service := NewContactService(db)
+	repo := postgres.NewContactRepository(db)
+	service := NewContactService(repo)
 
 	tests := []struct {
 		name      string
@@ -267,7 +272,8 @@ func TestContactService_Delete(t *testing.T) {
 	org := testutil.CreateTestOrganization(t, db)
 	contact := testutil.CreateTestContact(t, db, org.ID)
 
-	service := NewContactService(db)
+	repo := postgres.NewContactRepository(db)
+	service := NewContactService(repo)
 
 	tests := []struct {
 		name      string

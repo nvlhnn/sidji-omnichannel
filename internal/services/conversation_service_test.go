@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/sidji-omnichannel/internal/adapters/db/postgres"
 	"github.com/sidji-omnichannel/internal/models"
 	"github.com/sidji-omnichannel/internal/testutil"
 )
@@ -19,7 +20,8 @@ func TestConversationService_List(t *testing.T) {
 	contact := testutil.CreateTestContact(t, db, org.ID)
 	_ = testutil.CreateTestConversation(t, db, org.ID, channel.ID, contact.ID)
 
-	service := NewConversationService(db)
+	repo := postgres.NewConversationRepository(db)
+	service := NewConversationService(repo)
 
 	tests := []struct {
 		name           string
@@ -109,7 +111,8 @@ func TestConversationService_GetByID(t *testing.T) {
 	contact := testutil.CreateTestContact(t, db, org.ID)
 	conv := testutil.CreateTestConversation(t, db, org.ID, channel.ID, contact.ID)
 
-	service := NewConversationService(db)
+	repo := postgres.NewConversationRepository(db)
+	service := NewConversationService(repo)
 
 	tests := []struct {
 		name    string
@@ -173,7 +176,8 @@ func TestConversationService_Assign(t *testing.T) {
 	conv := testutil.CreateTestConversation(t, db, org.ID, channel.ID, contact.ID)
 	user := testutil.CreateTestUser(t, db, org.ID, models.RoleAgent)
 
-	service := NewConversationService(db)
+	repo := postgres.NewConversationRepository(db)
+	service := NewConversationService(repo)
 
 	tests := []struct {
 		name    string
@@ -237,7 +241,8 @@ func TestConversationService_UpdateStatus(t *testing.T) {
 	channel := testutil.CreateTestChannel(t, db, org.ID)
 	contact := testutil.CreateTestContact(t, db, org.ID)
 	
-	service := NewConversationService(db)
+	repo := postgres.NewConversationRepository(db)
+	service := NewConversationService(repo)
 
 	tests := []struct {
 		name      string
@@ -313,7 +318,8 @@ func TestConversationService_FindOrCreate(t *testing.T) {
 	channel := testutil.CreateTestChannel(t, db, org.ID)
 	contact := testutil.CreateTestContact(t, db, org.ID)
 
-	service := NewConversationService(db)
+	repo := postgres.NewConversationRepository(db)
+	service := NewConversationService(repo)
 
 	// First call should create
 	conv1, err := service.FindOrCreate(org.ID, channel.ID, contact.ID)

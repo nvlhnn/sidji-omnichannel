@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/sidji-omnichannel/internal/adapters/db/postgres"
 	"github.com/sidji-omnichannel/internal/models"
 	"github.com/sidji-omnichannel/internal/services"
 	"github.com/sidji-omnichannel/internal/testutil"
@@ -22,7 +23,7 @@ func setupTeamTestRouter(t *testing.T, db *sql.DB) (*gin.Engine, *models.Organiz
 	admin := testutil.CreateTestUser(t, db, org.ID, models.RoleAdmin)
 
 	// Create services
-	teamService := services.NewTeamService(db)
+	teamService := services.NewTeamService(postgres.NewTeamRepository(db))
 
 	handler := NewTeamHandler(teamService)
 

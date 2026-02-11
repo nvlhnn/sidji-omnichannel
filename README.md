@@ -5,7 +5,7 @@ A unified inbox platform for managing customer conversations across WhatsApp and
 ## ✨ Features
 
 - **Unified Inbox**: View and respond to messages from multiple channels in one place
-- **WhatsApp Business Integration**: Connect your WhatsApp Business account
+- **WhatsApp Business Integration**: Connect your WhatsApp Business account via Meta Cloud API
 - **Instagram DM Integration**: Manage Instagram Direct Messages
 - **Team Collaboration**: Multiple agents with role-based access (Admin, Supervisor, Agent)
 - **Real-time Updates**: WebSocket-powered live message updates
@@ -18,8 +18,9 @@ A unified inbox platform for managing customer conversations across WhatsApp and
 ## 🏗️ Tech Stack
 
 - **Backend**: Go 1.21+ with Gin framework
+- **Architecture**: **Hexagonal Architecture (Ports and Adapters)**
 - **Frontend**: Next.js 14 with TypeScript (separate project)
-- **Database**: PostgreSQL 15
+- **Database**: PostgreSQL 15 + pgvector (for knowledge base)
 - **Cache/Realtime**: Redis
 - **WebSocket**: Gorilla WebSocket
 - **Deployment**: Docker + AWS
@@ -27,24 +28,45 @@ A unified inbox platform for managing customer conversations across WhatsApp and
 ## 📁 Project Structure
 
 ```
-Sidji-Omnichannel-omnichannel/
+Sidji-Omnichannel/
 ├── cmd/
 │   └── server/
 │       └── main.go              # Entry point
 ├── internal/
-│   ├── config/                  # Configuration
-│   ├── database/                # Database connections
-│   ├── models/                  # Data models
-│   ├── services/                # Business logic
-│   ├── handlers/                # HTTP handlers
+│   ├── domain/
+│   │   └── ports/               # Port definitions (Interfaces)
+│   │       ├── repository/      # Outbound ports (Driven Ports)
+│   │       └── service/         # Inbound ports (Driving Ports)
+│   ├── adapters/                # Concrete implementations (Driven Adapters)
+│   │   └── db/
+│   │       └── postgres/        # PostgreSQL repository implementations
+│   ├── services/                # Business logic & Use Cases (Implementing Inbound Ports)
+│   ├── handlers/                # HTTP handlers (Driving Adapters)
+│   ├── models/                  # Domain entities and data models
 │   ├── middleware/              # Auth, CORS, etc.
-│   └── websocket/               # Real-time hub
+│   ├── integrations/            # External API integrations (Meta, etc.)
+│   ├── ai/                      # AI Provider implementations (Gemini, OpenAI)
+│   ├── websocket/               # Real-time hub
+│   ├── config/                  # Configuration
+│   └── testutil/                # Testing utilities
 ├── migrations/                  # SQL migrations
 ├── web/                         # Frontend (Next.js)
 ├── docker-compose.yml
 ├── Dockerfile
 └── go.mod
 ```
+
+## 📐 Architecture
+
+This project follows the **Hexagonal Architecture** (also known as Ports and Adapters) to ensure high maintainability, testability, and decoupling from external dependencies:
+
+1.  **Domain (Core)**: Contains the business entities (`models/`) and Port definitions (`domain/ports/`).
+2.  **Ports**: Interfaces that define how the core interacts with the outside world.
+    -   **Inbound Ports (Service)**: Define the use cases available to be triggered (e.g., `TeamService` interface).
+    -   **Outbound Ports (Repository)**: Define how the core fetches/saves data (e.g., `TeamRepository` interface).
+3.  **Adapters**:
+    -   **Driving Adapters (Handlers)**: The HTTP handlers that call the Service ports.
+    -   **Driven Adapters (Postgres)**: The concrete implementations of Repository ports.
 
 ## 🚀 Getting Started
 
@@ -57,7 +79,8 @@ Sidji-Omnichannel-omnichannel/
 ### 1. Clone and Setup
 
 ```bash
-cd Sidji-Omnichannel
+git clone https://github.com/yourusername/sidji-omnichannel.git
+cd sidji-omnichannel
 cp .env.example .env
 ```
 
@@ -72,7 +95,7 @@ docker-compose up -d postgres redis
 
 ```bash
 # Using psql or your preferred tool
-psql -h localhost -U Sidji-Omnichannel -d Sidji-Omnichannel -f migrations/001_initial_schema.up.sql
+psql -h localhost -p 5433 -U sidji -d sidji_test -f migrations/001_initial_schema.up.sql
 ```
 
 ### 4. Run the Server
@@ -112,14 +135,37 @@ The frontend will be available at `http://localhost:3000`
 - `GET /api/conversations/:id/messages` - Get messages
 - `POST /api/conversations/:id/messages` - Send message
 
+### Channels
+- `GET /api/channels` - List connected channels
+- `POST /api/channels/discover/meta` - Discover available Meta accounts
+- `POST /api/channels/whatsapp/connect` - Connect selected WhatsApp account
+- `POST /api/channels/instagram/connect` - Connect selected Instagram account
+- `POST /api/channels/facebook/connect` - Connect selected Facebook page
+- `DELETE /api/channels/:id` - Disconnect channel
+
 ### Webhooks
-- `GET /api/webhooks` - Webhook verification
-- `POST /api/webhooks` - Receive WhatsApp/Instagram webhooks
-- `GET /api/webhooks/meta` - Backward-compatible verification path
-- `POST /api/webhooks/meta` - Backward-compatible webhook receive path
+- `GET /api/webhooks` - Meta webhook verification
+- `POST /api/webhooks` - Receive Meta (WhatsApp/Instagram) webhooks
 
 ### WebSocket
 - `GET /api/ws` - WebSocket connection for real-time updates
+
+### Team Management
+- `GET /api/team/members` - List team members
+- `POST /api/team/members` - Invite new member
+- `PATCH /api/team/members/:id` - Update member
+
+### Canned Responses
+- `GET /api/canned-responses` - List canned responses
+- `POST /api/canned-responses` - Create new response
+- `PUT /api/canned-responses/:id` - Update response
+- `DELETE /api/canned-responses/:id` - Delete response
+
+### Labels
+- `GET /api/labels` - List all labels
+- `POST /api/labels` - Create new label
+- `PUT /api/labels/:id` - Update label
+- `DELETE /api/labels/:id` - Delete label
 
 ### AI Configuration
 - `GET /api/channels/:id/ai` - Get AI configuration for a channel
@@ -168,10 +214,9 @@ See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for AWS deployment guide.
 | `DB_NAME` | PostgreSQL database name |
 | `REDIS_HOST` | Redis host |
 | `REDIS_PORT` | Redis port |
-| `META_VERIFY_TOKEN` | Webhook verification token (e.g., Sidji-Omnichannel_secret_2026) |
-| `META_ACCESS_TOKEN` | Meta API access token |
-| `WHATSAPP_PHONE_NUMBER_ID` | WhatsApp phone number ID |
-| `INSTAGRAM_ACCOUNT_ID` | Instagram account ID |
+| `META_APP_ID` | Meta App ID (from App Dashboard) |
+| `META_APP_SECRET` | Meta App Secret (from App Dashboard) |
+| `META_VERIFY_TOKEN` | Webhook verification token |
 | `GEMINI_API_KEY` | Google Gemini API Key |
 | `AI_PROVIDER` | AI Provider (gemini or openai) |
 | `OPENAI_API_KEY` | OpenAI API Key |

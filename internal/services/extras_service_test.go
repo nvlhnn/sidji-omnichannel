@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/sidji-omnichannel/internal/adapters/db/postgres"
 	"github.com/sidji-omnichannel/internal/models"
 	"github.com/sidji-omnichannel/internal/testutil"
 )
@@ -17,7 +18,7 @@ func TestCannedResponseService_List(t *testing.T) {
 	org := testutil.CreateTestOrganization(t, db)
 	user := testutil.CreateTestUser(t, db, org.ID, models.RoleAgent)
 
-	service := NewCannedResponseService(db)
+	service := NewCannedResponseService(postgres.NewCannedResponseRepository(db))
 
 	// Create some canned responses
 	for i := 0; i < 3; i++ {
@@ -81,7 +82,7 @@ func TestCannedResponseService_Search(t *testing.T) {
 	org := testutil.CreateTestOrganization(t, db)
 	user := testutil.CreateTestUser(t, db, org.ID, models.RoleAgent)
 
-	service := NewCannedResponseService(db)
+	service := NewCannedResponseService(postgres.NewCannedResponseRepository(db))
 
 	// Create canned responses
 	_, _ = service.Create(org.ID, user.ID, &models.CreateCannedResponseInput{
@@ -158,7 +159,7 @@ func TestCannedResponseService_Create(t *testing.T) {
 	org := testutil.CreateTestOrganization(t, db)
 	user := testutil.CreateTestUser(t, db, org.ID, models.RoleAgent)
 
-	service := NewCannedResponseService(db)
+	service := NewCannedResponseService(postgres.NewCannedResponseRepository(db))
 
 	tests := []struct {
 		name    string
@@ -209,7 +210,7 @@ func TestCannedResponseService_Delete(t *testing.T) {
 	org := testutil.CreateTestOrganization(t, db)
 	user := testutil.CreateTestUser(t, db, org.ID, models.RoleAgent)
 
-	service := NewCannedResponseService(db)
+	service := NewCannedResponseService(postgres.NewCannedResponseRepository(db))
 
 	// Create a response
 	response, err := service.Create(org.ID, user.ID, &models.CreateCannedResponseInput{
@@ -270,7 +271,7 @@ func TestLabelService_List(t *testing.T) {
 	// Setup test data
 	org := testutil.CreateTestOrganization(t, db)
 
-	service := NewLabelService(db)
+	service := NewLabelService(postgres.NewLabelRepository(db))
 
 	// Create some labels
 	for i := 0; i < 3; i++ {
@@ -333,7 +334,7 @@ func TestLabelService_Create(t *testing.T) {
 	// Setup test data
 	org := testutil.CreateTestOrganization(t, db)
 
-	service := NewLabelService(db)
+	service := NewLabelService(postgres.NewLabelRepository(db))
 
 	tests := []struct {
 		name    string
@@ -391,7 +392,7 @@ func TestLabelService_Update(t *testing.T) {
 	// Setup test data
 	org := testutil.CreateTestOrganization(t, db)
 
-	service := NewLabelService(db)
+	service := NewLabelService(postgres.NewLabelRepository(db))
 
 	// Create a label
 	label, err := service.Create(org.ID, &models.CreateLabelInput{
@@ -463,7 +464,7 @@ func TestLabelService_Delete(t *testing.T) {
 	// Setup test data
 	org := testutil.CreateTestOrganization(t, db)
 
-	service := NewLabelService(db)
+	service := NewLabelService(postgres.NewLabelRepository(db))
 
 	// Create a label
 	label, err := service.Create(org.ID, &models.CreateLabelInput{

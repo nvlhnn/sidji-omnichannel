@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/sidji-omnichannel/internal/adapters/db/postgres"
 	"github.com/sidji-omnichannel/internal/models"
 	"github.com/sidji-omnichannel/internal/services"
 	"github.com/sidji-omnichannel/internal/testutil"
@@ -25,7 +26,8 @@ func setupContactTestRouter(t *testing.T) (*gin.Engine, *models.Organization, *m
 	contact := testutil.CreateTestContact(t, db, org.ID)
 
 	// Create services
-	contactService := services.NewContactService(db)
+	repo := postgres.NewContactRepository(db)
+	contactService := services.NewContactService(repo)
 	handler := NewContactHandler(contactService)
 
 	router := gin.New()

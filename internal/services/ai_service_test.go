@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sidji-omnichannel/internal/adapters/db/postgres"
 	"github.com/sidji-omnichannel/internal/models"
 	"github.com/sidji-omnichannel/internal/testutil"
 )
@@ -44,7 +45,7 @@ func TestAIService_Config(t *testing.T) {
 	org := testutil.CreateTestOrganization(t, db)
 	channel := testutil.CreateTestChannel(t, db, org.ID)
 
-	service := &AIService{db: db}
+	service := &AIService{repo: postgres.NewAIRepository(db)}
 
 	// 1. Get default config
 	config, err := service.GetConfig(channel.ID)
@@ -92,7 +93,7 @@ func TestAIService_DetermineAction(t *testing.T) {
 
 	org := testutil.CreateTestOrganization(t, db)
 	channel := testutil.CreateTestChannel(t, db, org.ID)
-	service := &AIService{db: db}
+	service := &AIService{repo: postgres.NewAIRepository(db)}
 
 	now := time.Now()
 	recent := now.Add(-5 * time.Minute)
@@ -188,8 +189,9 @@ func TestAIService_Knowledge(t *testing.T) {
 	channel := testutil.CreateTestChannel(t, db, org.ID)
 	
 	mockProvider := &MockAIProvider{}
+	repo := postgres.NewAIRepository(db)
 	service := &AIService{
-		db:       db,
+		repo:     repo,
 		provider: mockProvider,
 	}
 
@@ -277,7 +279,7 @@ func TestAIService_Credits(t *testing.T) {
 	// Postgres defaults trigger on INSERT if column is omitted.
 	
 	channel := testutil.CreateTestChannel(t, db, org.ID)
-	service := &AIService{db: db}
+	service := &AIService{repo: postgres.NewAIRepository(db)}
 
 	// 1. Initial State: 10 credits (default)
 	err = service.CheckCredits(channel.ID)

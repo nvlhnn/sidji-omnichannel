@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/sidji-omnichannel/internal/adapters/db/postgres"
 	"github.com/sidji-omnichannel/internal/models"
 	"github.com/sidji-omnichannel/internal/services"
 	"github.com/sidji-omnichannel/internal/testutil"
@@ -28,10 +29,16 @@ func setupConversationTestRouter(t *testing.T) (*gin.Engine, *sql.DB, *models.Or
 	conv := testutil.CreateTestConversation(t, db, org.ID, channel.ID, contact.ID)
 
 	// Create services
-	convService := services.NewConversationService(db)
-	msgService := services.NewMessageService(db)
-	channelService := services.NewChannelService(db, testutil.TestConfig()) // nil meta client for tests
-	contactService := services.NewContactService(db)
+	cr := postgres.NewConversationRepository(db)
+	mr := postgres.NewMessageRepository(db)
+	ur := postgres.NewUserRepository(db)
+	convService := services.NewConversationService(cr)
+	msgService := services.NewMessageService(mr, cr, ur)
+	or := postgres.NewOrganizationRepository(db)
+	chr := postgres.NewChannelRepository(db)
+	cor := postgres.NewContactRepository(db)
+	channelService := services.NewChannelService(chr, or, testutil.TestConfig()) // nil meta client for tests
+	contactService := services.NewContactService(cor)
 	hub := websocket.NewHub()
 
 	handler := NewConversationHandler(convService, msgService, channelService, contactService, nil, hub)

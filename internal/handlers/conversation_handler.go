@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/sidji-omnichannel/internal/domain/ports/service"
 	"github.com/sidji-omnichannel/internal/middleware"
 	"github.com/sidji-omnichannel/internal/models"
 	"github.com/sidji-omnichannel/internal/services"
@@ -14,21 +15,21 @@ import (
 
 // ConversationHandler handles conversation endpoints
 type ConversationHandler struct {
-	conversationService *services.ConversationService
-	messageService      *services.MessageService
-	channelService      *services.ChannelService
-	contactService      *services.ContactService
-	aiService           *services.AIService
+	conversationService service.ConversationService
+	messageService      service.MessageService
+	channelService      service.ChannelService
+	contactService      service.ContactService
+	aiService           service.AIService
 	hub                *websocket.Hub
 }
 
 // NewConversationHandler creates a new conversation handler
 func NewConversationHandler(
-	cs *services.ConversationService,
-	ms *services.MessageService,
-	chs *services.ChannelService,
-	cts *services.ContactService,
-	ais *services.AIService,
+	cs service.ConversationService,
+	ms service.MessageService,
+	chs service.ChannelService,
+	cts service.ContactService,
+	ais service.AIService,
 	hub *websocket.Hub,
 ) *ConversationHandler {
 	return &ConversationHandler{

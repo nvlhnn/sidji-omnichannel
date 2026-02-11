@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sidji-omnichannel/internal/adapters/db/postgres"
 	"github.com/sidji-omnichannel/internal/models"
 	"github.com/sidji-omnichannel/internal/services"
 	"github.com/sidji-omnichannel/internal/testutil"
@@ -19,8 +20,8 @@ func setupExtrasTestRouter(t *testing.T) (*gin.Engine, *models.Organization, *mo
 	org := testutil.CreateTestOrganization(t, db)
 	user := testutil.CreateTestUser(t, db, org.ID, models.RoleAgent)
 
-	cannedService := services.NewCannedResponseService(db)
-	labelService := services.NewLabelService(db)
+	cannedService := services.NewCannedResponseService(postgres.NewCannedResponseRepository(db))
+	labelService := services.NewLabelService(postgres.NewLabelRepository(db))
 
 	cannedHandler := NewCannedResponseHandler(cannedService)
 	labelHandler := NewLabelHandler(labelService)

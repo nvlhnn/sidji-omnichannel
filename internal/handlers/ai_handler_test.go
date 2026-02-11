@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/sidji-omnichannel/internal/adapters/db/postgres"
 	"github.com/sidji-omnichannel/internal/models"
 	"github.com/sidji-omnichannel/internal/services"
 	"github.com/sidji-omnichannel/internal/testutil"
@@ -51,7 +52,7 @@ func TestAIHandler(t *testing.T) {
 	// Better yet, I'll add a helper to AIService specifically for testing if needed.
 	// Or just use NewAIService and mock the config so it fails to init provider but service exists.
 	
-	aiService, _ = services.NewAIService(db, testutil.TestConfig())
+	aiService, _ = services.NewAIService(postgres.NewAIRepository(db), testutil.TestConfig())
 	handler := NewAIHandler(aiService)
 
 	router := gin.New()
@@ -169,7 +170,7 @@ func TestAIHandler_NotFound(t *testing.T) {
 	db := testutil.TestDB(t)
 	defer db.Close()
 	
-	aiService, _ := services.NewAIService(db, testutil.TestConfig())
+	aiService, _ := services.NewAIService(postgres.NewAIRepository(db), testutil.TestConfig())
 	handler := NewAIHandler(aiService)
 	router := gin.New()
 	router.GET("/ai/config/:id", handler.GetConfig)

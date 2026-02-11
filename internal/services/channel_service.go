@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/sidji-omnichannel/internal/config"
+	"github.com/sidji-omnichannel/internal/domain/ports/repository"
 	"github.com/sidji-omnichannel/internal/integrations"
 	"github.com/sidji-omnichannel/internal/integrations/meta"
 	"github.com/sidji-omnichannel/internal/models"
@@ -22,21 +22,27 @@ var (
 
 // ChannelService handles channel operations and message sending
 type ChannelService struct {
-	db         *sql.DB
+	repo       repository.ChannelRepository
+	orgRepo    repository.OrganizationRepository
 	cfg        *config.Config
 	metaClient *meta.MetaClient
 	providers  map[string]integrations.MessageProvider
 }
 
 // NewChannelService creates a new channel service
-func NewChannelService(db *sql.DB, cfg *config.Config) *ChannelService {
+func NewChannelService(
+	repo repository.ChannelRepository,
+	orgRepo repository.OrganizationRepository,
+	cfg *config.Config,
+) *ChannelService {
 	metaClient := meta.NewMetaClient(&cfg.Meta)
 	
 	providers := make(map[string]integrations.MessageProvider)
 	providers["meta"] = meta.NewMetaProvider(metaClient)
 
 	return &ChannelService{
-		db:         db,
+		repo:       repo,
+		orgRepo:    orgRepo,
 		cfg:        cfg,
 		metaClient: metaClient,
 		providers:  providers,
@@ -45,98 +51,36 @@ func NewChannelService(db *sql.DB, cfg *config.Config) *ChannelService {
 
 // List returns all channels for an organization
 func (s *ChannelService) List(orgID uuid.UUID) ([]*models.Channel, error) {
-	rows, err := s.db.Query(`
-		SELECT id, organization_id, type, provider, name, config, phone_number_id, ig_user_id, facebook_page_id, status, created_at
-		FROM channels
-		WHERE organization_id = $1
-		ORDER BY created_at DESC
-	`, orgID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var channelsList []*models.Channel
-	for rows.Next() {
-		channel := &models.Channel{}
-		var pnID, igID, fbID sql.NullString
-		err := rows.Scan(
-			&channel.ID, &channel.OrganizationID, &channel.Type, &channel.Provider, &channel.Name,
-			&channel.Config, &pnID, &igID, &fbID, &channel.Status, &channel.CreatedAt,
-		)
-		if err != nil {
-			return nil, err
-		}
-		if pnID.Valid { channel.PhoneNumberID = pnID.String }
-		if igID.Valid { channel.IGUserID = igID.String }
-		if fbID.Valid { channel.FacebookPageID = fbID.String }
-		channelsList = append(channelsList, channel)
-	}
-
-	return channelsList, nil
+	return s.repo.List(orgID)
 }
 
 // Get retrieves a channel by ID (without org check)
 func (s *ChannelService) Get(channelID uuid.UUID) (*models.Channel, error) {
-	channel := &models.Channel{}
-	var pnID, igID, fbID sql.NullString
-	err := s.db.QueryRow(`
-		SELECT id, organization_id, type, provider, name, config, access_token, phone_number_id, ig_user_id, facebook_page_id, status, created_at
-		FROM channels
-		WHERE id = $1
-	`, channelID).Scan(
-		&channel.ID, &channel.OrganizationID, &channel.Type, &channel.Provider, &channel.Name,
-		&channel.Config, &channel.AccessToken, &pnID, &igID, &fbID,
-		&channel.Status, &channel.CreatedAt,
-	)
-	if err == sql.ErrNoRows {
+	ch, err := s.repo.Get(channelID)
+	if err == repository.ErrNotFound {
 		return nil, ErrChannelNotFound
 	}
-	if err != nil {
-		return nil, err
-	}
-	if pnID.Valid { channel.PhoneNumberID = pnID.String }
-	if igID.Valid { channel.IGUserID = igID.String }
-	if fbID.Valid { channel.FacebookPageID = fbID.String }
-	return channel, nil
+	return ch, err
 }
 
 // GetByID retrieves a channel by ID
 func (s *ChannelService) GetByID(orgID, channelID uuid.UUID) (*models.Channel, error) {
-	channel := &models.Channel{}
-	var pnID, igID, fbID sql.NullString
-	err := s.db.QueryRow(`
-		SELECT id, organization_id, type, provider, name, config, access_token, phone_number_id, ig_user_id, facebook_page_id, status, created_at
-		FROM channels
-		WHERE id = $1 AND organization_id = $2
-	`, channelID, orgID).Scan(
-		&channel.ID, &channel.OrganizationID, &channel.Type, &channel.Provider, &channel.Name,
-		&channel.Config, &channel.AccessToken, &pnID, &igID, &fbID,
-		&channel.Status, &channel.CreatedAt,
-	)
-	if err == sql.ErrNoRows {
+	ch, err := s.repo.GetByID(orgID, channelID)
+	if err == repository.ErrNotFound {
 		return nil, ErrChannelNotFound
 	}
-	if err != nil {
-		return nil, err
-	}
-	if pnID.Valid { channel.PhoneNumberID = pnID.String }
-	if igID.Valid { channel.IGUserID = igID.String }
-	if fbID.Valid { channel.FacebookPageID = fbID.String }
-	return channel, nil
+	return ch, err
 }
 
 // Create creates a new channel
 func (s *ChannelService) Create(orgID uuid.UUID, input *models.CreateChannelInput) (*models.Channel, error) {
 	// Check subscription limits
-	var plan string
-	err := s.db.QueryRow("SELECT plan FROM organizations WHERE id = $1", orgID).Scan(&plan)
+	plan, err := s.orgRepo.GetPlan(orgID)
 	if err != nil {
 		return nil, err
 	}
 
-	var channelCount int
-	err = s.db.QueryRow("SELECT COUNT(*) FROM channels WHERE organization_id = $1", orgID).Scan(&channelCount)
+	channelCount, err := s.orgRepo.GetChannelCount(orgID)
 	if err != nil {
 		return nil, err
 	}
@@ -183,13 +127,7 @@ func (s *ChannelService) Create(orgID uuid.UUID, input *models.CreateChannelInpu
 	}
 	channel.Config = configJSON
 
-	_, err = s.db.Exec(`
-		INSERT INTO channels (id, organization_id, type, provider, name, config, access_token, phone_number_id, ig_user_id, facebook_page_id, status)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-	`, channel.ID, channel.OrganizationID, channel.Type, channel.Provider, channel.Name, channel.Config,
-		channel.AccessToken, channel.PhoneNumberID, channel.IGUserID, channel.FacebookPageID, channel.Status)
-
-	if err != nil {
+	if err := s.repo.Create(channel); err != nil {
 		return nil, err
 	}
 
@@ -198,27 +136,16 @@ func (s *ChannelService) Create(orgID uuid.UUID, input *models.CreateChannelInpu
 
 // Delete deletes a channel
 func (s *ChannelService) Delete(orgID, channelID uuid.UUID) error {
-	result, err := s.db.Exec(`
-		DELETE FROM channels WHERE id = $1 AND organization_id = $2
-	`, channelID, orgID)
-	if err != nil {
-		return err
-	}
-
-	rows, _ := result.RowsAffected()
-	if rows == 0 {
+	err := s.repo.Delete(orgID, channelID)
+	if err == repository.ErrNotFound {
 		return ErrChannelNotFound
 	}
-
-	return nil
+	return err
 }
 
 // UpdateStatus updates channel status
 func (s *ChannelService) UpdateStatus(channelID uuid.UUID, status models.ChannelStatus) error {
-	_, err := s.db.Exec(`
-		UPDATE channels SET status = $1, updated_at = NOW() WHERE id = $2
-	`, status, channelID)
-	return err
+	return s.repo.UpdateStatus(channelID, status)
 }
 
 // SendMessage sends a message through a channel using the appropriate provider
@@ -234,50 +161,20 @@ func (s *ChannelService) SendMessage(channel *models.Channel, contact *models.Co
 
 // GetChannelByPhoneNumberID finds a channel by WhatsApp phone number ID
 func (s *ChannelService) GetChannelByPhoneNumberID(phoneNumberID string) (*models.Channel, error) {
-	channel := &models.Channel{}
-	var pnID, igID, fbID sql.NullString
-	err := s.db.QueryRow(`
-		SELECT id, organization_id, type, provider, name, config, access_token, phone_number_id, ig_user_id, facebook_page_id, status
-		FROM channels
-		WHERE phone_number_id = $1 AND status = 'active'
-	`, phoneNumberID).Scan(
-		&channel.ID, &channel.OrganizationID, &channel.Type, &channel.Provider, &channel.Name,
-		&channel.Config, &channel.AccessToken, &pnID, &igID, &fbID, &channel.Status,
-	)
-	if err == sql.ErrNoRows {
+	ch, err := s.repo.GetByPhoneNumberID(phoneNumberID)
+	if err == repository.ErrNotFound {
 		return nil, ErrChannelNotFound
 	}
-	if err != nil {
-		return nil, err
-	}
-	if pnID.Valid { channel.PhoneNumberID = pnID.String }
-	if igID.Valid { channel.IGUserID = igID.String }
-	if fbID.Valid { channel.FacebookPageID = fbID.String }
-	return channel, nil
+	return ch, err
 }
 
 // GetChannelByIGUserID finds a channel by Instagram user ID
 func (s *ChannelService) GetChannelByIGUserID(igUserID string) (*models.Channel, error) {
-	channel := &models.Channel{}
-	var pnID, igID, fbID sql.NullString
-	err := s.db.QueryRow(`
-		SELECT id, organization_id, type, provider, name, config, access_token, phone_number_id, ig_user_id, facebook_page_id, status
-		FROM channels
-		WHERE ig_user_id = $1 AND status = 'active'
-	`, igUserID).Scan(
-		&channel.ID, &channel.OrganizationID, &channel.Type, &channel.Provider, &channel.Name,
-		&channel.Config, &channel.AccessToken, &pnID, &igID, &fbID, &channel.Status,
-	)
-	if err == sql.ErrNoRows {
+	ch, err := s.repo.GetByIGUserID(igUserID)
+	if err == repository.ErrNotFound {
 		return nil, ErrChannelNotFound
 	}
-	if err != nil {
-		return nil, err
-	}
-	if pnID.Valid { channel.PhoneNumberID = pnID.String }
-	if igID.Valid { channel.IGUserID = igID.String }
-	if fbID.Valid { channel.FacebookPageID = fbID.String }
-	return channel, nil
+	return ch, err
 }
 
 // GetInstagramUserProfile fetches an Instagram user's profile
@@ -334,9 +231,10 @@ func (s *ChannelService) ConnectInstagram(orgID uuid.UUID, accessToken string, s
 
 		existing, err := s.GetChannelByIGUserID(igID)
 		if err == nil {
-			_, execErr := s.db.Exec(`UPDATE channels SET access_token=$1, status='active', updated_at=NOW() WHERE id=$2`, pageAccessToken, existing.ID)
-			if execErr != nil {
-				return nil, execErr
+			existing.AccessToken = pageAccessToken
+			existing.Status = models.ChannelStatusActive
+			if err := s.repo.Update(existing); err != nil {
+				return nil, err
 			}
 			return existing, nil
 		}
@@ -405,40 +303,25 @@ func (s *ChannelService) RefreshTokens() error {
 		return nil 
 	}
 
-	rows, err := s.db.Query(`
-		SELECT id, name, type, access_token 
-		FROM channels 
-		WHERE status = 'active' AND type IN ('instagram', 'whatsapp')
-	`)
+	channels, err := s.repo.ListActiveMeta()
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
 
-	for rows.Next() {
-		var id uuid.UUID
-		var name string
-		var chType models.ChannelType
-		var token string
-
-		if err := rows.Scan(&id, &name, &chType, &token); err != nil {
-			fmt.Printf("[TokenRefresher] Failed to scan channel: %v\n", err)
-			continue
-		}
-
-		newToken, expiresIn, err := s.metaClient.ExchangeForLongLivedToken(token)
+	for _, ch := range channels {
+		newToken, expiresIn, err := s.metaClient.ExchangeForLongLivedToken(ch.AccessToken)
 		if err != nil {
-			fmt.Printf("[TokenRefresher] Failed to refresh token for channel %s (%s): %v\n", name, id, err)
+			fmt.Printf("[TokenRefresher] Failed to refresh token for channel %s (%s): %v\n", ch.Name, ch.ID, err)
 			continue
 		}
 
-		_, err = s.db.Exec(`UPDATE channels SET access_token = $1, updated_at = NOW() WHERE id = $2`, newToken, id)
-		if err != nil {
-			fmt.Printf("[TokenRefresher] Failed to update token in DB for likely channel %s (%s): %v\n", name, id, err)
+		ch.AccessToken = newToken
+		if err := s.repo.Update(ch); err != nil {
+			fmt.Printf("[TokenRefresher] Failed to update token in DB for likely channel %s (%s): %v\n", ch.Name, ch.ID, err)
 			continue
 		}
 
-		fmt.Printf("[TokenRefresher] Successfully refreshed token for channel %s. Expires in ~%d days\n", name, expiresIn/86400)
+		fmt.Printf("[TokenRefresher] Successfully refreshed token for channel %s. Expires in ~%d days\n", ch.Name, expiresIn/86400)
 	}
 
 	return nil
@@ -491,9 +374,10 @@ func (s *ChannelService) ConnectWhatsApp(orgID uuid.UUID, accessToken string, se
 			existing, err := s.GetChannelByPhoneNumberID(pnID)
 			if err == nil {
 				// Update existing
-				_, execErr := s.db.Exec(`UPDATE channels SET access_token=$1, status='active', updated_at=NOW() WHERE id=$2`, accessToken, existing.ID)
-				if execErr != nil {
-					return nil, execErr
+				existing.AccessToken = accessToken
+				existing.Status = models.ChannelStatusActive
+				if err := s.repo.Update(existing); err != nil {
+					return nil, err
 				}
 				return existing, nil
 			}
@@ -533,26 +417,11 @@ func (s *ChannelService) ConnectWhatsApp(orgID uuid.UUID, accessToken string, se
 
 // GetChannelByFacebookPageID finds a channel by Facebook page ID
 func (s *ChannelService) GetChannelByFacebookPageID(pageID string) (*models.Channel, error) {
-	channel := &models.Channel{}
-	var pnID, igID, fbID sql.NullString
-	err := s.db.QueryRow(`
-		SELECT id, organization_id, type, provider, name, config, access_token, phone_number_id, ig_user_id, facebook_page_id, status
-		FROM channels
-		WHERE facebook_page_id = $1 AND status = 'active'
-	`, pageID).Scan(
-		&channel.ID, &channel.OrganizationID, &channel.Type, &channel.Provider, &channel.Name,
-		&channel.Config, &channel.AccessToken, &pnID, &igID, &fbID, &channel.Status,
-	)
-	if err == sql.ErrNoRows {
+	ch, err := s.repo.GetByFacebookPageID(pageID)
+	if err == repository.ErrNotFound {
 		return nil, ErrChannelNotFound
 	}
-	if err != nil {
-		return nil, err
-	}
-	if pnID.Valid { channel.PhoneNumberID = pnID.String }
-	if igID.Valid { channel.IGUserID = igID.String }
-	if fbID.Valid { channel.FacebookPageID = fbID.String }
-	return channel, nil
+	return ch, err
 }
 
 // ConnectFacebook automatically connects Facebook Pages
@@ -588,9 +457,10 @@ func (s *ChannelService) ConnectFacebook(orgID uuid.UUID, accessToken string, se
 		// Check if already exists
 		existing, err := s.GetChannelByFacebookPageID(pageID)
 		if err == nil {
-			_, execErr := s.db.Exec(`UPDATE channels SET access_token=$1, status='active', updated_at=NOW() WHERE id=$2`, pageAccessToken, existing.ID)
-			if execErr != nil {
-				return nil, execErr
+			existing.AccessToken = pageAccessToken
+			existing.Status = models.ChannelStatusActive
+			if err := s.repo.Update(existing); err != nil {
+				return nil, err
 			}
 			connectedChannels = append(connectedChannels, existing)
 			continue

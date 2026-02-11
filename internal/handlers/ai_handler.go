@@ -6,15 +6,15 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/sidji-omnichannel/internal/domain/ports/service"
 	"github.com/sidji-omnichannel/internal/models"
-	"github.com/sidji-omnichannel/internal/services"
 )
 
 type AIHandler struct {
-	aiService *services.AIService
+	aiService service.AIService
 }
 
-func NewAIHandler(aiService *services.AIService) *AIHandler {
+func NewAIHandler(aiService service.AIService) *AIHandler {
 	return &AIHandler{aiService: aiService}
 }
 

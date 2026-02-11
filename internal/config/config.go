@@ -13,15 +13,9 @@ type Config struct {
 	Redis    RedisConfig
 	Meta     MetaConfig
 	AWS      AWSConfig
-	Twilio   TwilioConfig
 	AI       AIConfig
 }
 
-type TwilioConfig struct {
-	AccountSID string
-	AuthToken  string
-	FromNumber string
-}
 
 type AppConfig struct {
 	Env         string
@@ -48,10 +42,6 @@ type MetaConfig struct {
 	AppID                     string
 	AppSecret                 string
 	VerifyToken               string
-	AccessToken               string
-	WhatsAppPhoneNumberID     string
-	WhatsAppBusinessAccountID string
-	InstagramAccountID        string
 }
 
 type AWSConfig struct {
@@ -94,15 +84,6 @@ func Load() (*Config, error) {
 			AppID:                     getEnv("META_APP_ID", ""),
 			AppSecret:                 getEnv("META_APP_SECRET", ""),
 			VerifyToken:               getEnv("META_VERIFY_TOKEN", ""),
-			AccessToken:               getEnv("META_ACCESS_TOKEN", ""),
-			WhatsAppPhoneNumberID:     getEnv("WHATSAPP_PHONE_NUMBER_ID", ""),
-			WhatsAppBusinessAccountID: getEnv("WHATSAPP_BUSINESS_ACCOUNT_ID", ""),
-			InstagramAccountID:        getEnv("INSTAGRAM_ACCOUNT_ID", ""),
-		},
-		Twilio: TwilioConfig{
-			AccountSID: getEnv("TWILIO_ACCOUNT_SID", ""),
-			AuthToken:  getEnv("TWILIO_AUTH_TOKEN", ""),
-			FromNumber: getEnv("TWILIO_FROM_NUMBER", ""),
 		},
 		AWS: AWSConfig{
 			Region:          getEnv("AWS_REGION", "ap-southeast-1"),

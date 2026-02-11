@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/sidji-omnichannel/internal/adapters/db/postgres"
 	"github.com/sidji-omnichannel/internal/models"
 	"github.com/sidji-omnichannel/internal/testutil"
 )
@@ -18,7 +19,8 @@ func TestTeamService_ListMembers(t *testing.T) {
 	testutil.CreateTestUser(t, db, org.ID, models.RoleAdmin)
 	testutil.CreateTestUser(t, db, org.ID, models.RoleAgent)
 
-	service := NewTeamService(db)
+	repo := postgres.NewTeamRepository(db)
+	service := NewTeamService(repo)
 
 	tests := []struct {
 		name      string
@@ -71,7 +73,8 @@ func TestTeamService_GetMember(t *testing.T) {
 	org := testutil.CreateTestOrganization(t, db)
 	user := testutil.CreateTestUser(t, db, org.ID, models.RoleAgent)
 
-	service := NewTeamService(db)
+	repo := postgres.NewTeamRepository(db)
+	service := NewTeamService(repo)
 
 	tests := []struct {
 		name     string
@@ -131,7 +134,8 @@ func TestTeamService_InviteMember(t *testing.T) {
 	// Setup test data
 	org := testutil.CreateTestOrganization(t, db)
 
-	service := NewTeamService(db)
+	repo := postgres.NewTeamRepository(db)
+	service := NewTeamService(repo)
 
 	tests := []struct {
 		name    string
@@ -203,7 +207,8 @@ func TestTeamService_UpdateMemberRole(t *testing.T) {
 	org := testutil.CreateTestOrganization(t, db)
 	user := testutil.CreateTestUser(t, db, org.ID, models.RoleAgent)
 
-	service := NewTeamService(db)
+	repo := postgres.NewTeamRepository(db)
+	service := NewTeamService(repo)
 
 	tests := []struct {
 		name     string
@@ -274,7 +279,8 @@ func TestTeamService_RemoveMember(t *testing.T) {
 	admin := testutil.CreateTestUser(t, db, org.ID, models.RoleAdmin)
 	agent := testutil.CreateTestUser(t, db, org.ID, models.RoleAgent)
 
-	service := NewTeamService(db)
+	repo := postgres.NewTeamRepository(db)
+	service := NewTeamService(repo)
 
 	tests := []struct {
 		name     string
@@ -334,7 +340,8 @@ func TestTeamService_GetOrganization(t *testing.T) {
 	// Setup test data
 	org := testutil.CreateTestOrganization(t, db)
 
-	service := NewTeamService(db)
+	repo := postgres.NewTeamRepository(db)
+	service := NewTeamService(repo)
 
 	tests := []struct {
 		name    string
@@ -383,7 +390,8 @@ func TestTeamService_UpdateOrganization(t *testing.T) {
 	// Setup test data
 	org := testutil.CreateTestOrganization(t, db)
 
-	service := NewTeamService(db)
+	repo := postgres.NewTeamRepository(db)
+	service := NewTeamService(repo)
 
 	tests := []struct {
 		name    string

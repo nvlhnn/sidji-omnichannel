@@ -1,13 +1,13 @@
 package services
 
 import (
-	"database/sql"
 	"errors"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/sidji-omnichannel/internal/config"
+	"github.com/sidji-omnichannel/internal/domain/ports/repository"
 	"github.com/sidji-omnichannel/internal/models"
 	"github.com/sidji-omnichannel/internal/subscription"
 	"golang.org/x/crypto/bcrypt"
@@ -21,20 +21,19 @@ var (
 
 // AuthService handles authentication logic
 type AuthService struct {
-	db  *sql.DB
-	cfg *config.Config
+	repo repository.AuthRepository
+	cfg  *config.Config
 }
 
 // NewAuthService creates a new auth service
-func NewAuthService(db *sql.DB, cfg *config.Config) *AuthService {
-	return &AuthService{db: db, cfg: cfg}
+func NewAuthService(repo repository.AuthRepository, cfg *config.Config) *AuthService {
+	return &AuthService{repo: repo, cfg: cfg}
 }
 
 // Register creates a new user and organization
 func (s *AuthService) Register(input *models.RegisterInput) (*models.AuthResponse, error) {
 	// Check if user exists
-	var exists bool
-	err := s.db.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)", input.Email).Scan(&exists)
+	exists, err := s.repo.ExistsByEmail(input.Email)
 	if err != nil {
 		return nil, err
 	}
@@ -48,14 +47,7 @@ func (s *AuthService) Register(input *models.RegisterInput) (*models.AuthRespons
 		return nil, err
 	}
 
-	// Start transaction
-	tx, err := s.db.Begin()
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	// Create organization
+	// Create objects
 	org := &models.Organization{
 		ID:                 uuid.New(),
 		Name:               input.OrganizationName,
@@ -67,20 +59,10 @@ func (s *AuthService) Register(input *models.RegisterInput) (*models.AuthRespons
 		BillingCycleStart:  time.Now(),
 		CreatedAt:          time.Now(),
 		UpdatedAt:          time.Now(),
+		MessageUsageLimit:  1000,
+		MessageUsageUsed:   0,
 	}
 
-	org.MessageUsageLimit = 1000
-	org.MessageUsageUsed = 0
-
-	_, err = tx.Exec(
-		"INSERT INTO organizations (id, name, slug, plan, subscription_status, ai_credits_limit, ai_credits_used, message_usage_limit, message_usage_used, billing_cycle_start) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
-		org.ID, org.Name, org.Slug, org.Plan, org.SubscriptionStatus, org.AICreditsLimit, org.AICreditsUsed, org.MessageUsageLimit, org.MessageUsageUsed, org.BillingCycleStart,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create user as admin
 	user := &models.User{
 		ID:             uuid.New(),
 		OrganizationID: org.ID,
@@ -91,17 +73,7 @@ func (s *AuthService) Register(input *models.RegisterInput) (*models.AuthRespons
 		Status:         models.StatusOffline,
 	}
 
-	_, err = tx.Exec(
-		`INSERT INTO users (id, organization_id, email, password_hash, name, role, status) 
-		 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-		user.ID, user.OrganizationID, user.Email, user.PasswordHash, user.Name, user.Role, user.Status,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	// Commit transaction
-	if err := tx.Commit(); err != nil {
+	if err := s.repo.CreateRegisterTransaction(org, user); err != nil {
 		return nil, err
 	}
 
@@ -126,31 +98,12 @@ func (s *AuthService) Register(input *models.RegisterInput) (*models.AuthRespons
 
 // Login authenticates a user
 func (s *AuthService) Login(input *models.LoginInput) (*models.AuthResponse, error) {
-	user := &models.User{}
-	org := &models.Organization{}
-
-	// Get user and organization
-	var avatarURL sql.NullString
-	err := s.db.QueryRow(`
-		SELECT u.id, u.organization_id, u.email, u.password_hash, u.name, u.role, u.status, u.avatar_url,
-		       o.id, o.name, o.slug, o.plan, o.subscription_status, o.ai_credits_limit, o.ai_credits_used, o.message_usage_limit, o.message_usage_used, o.billing_cycle_start
-		FROM users u
-		JOIN organizations o ON o.id = u.organization_id
-		WHERE u.email = $1
-	`, input.Email).Scan(
-		&user.ID, &user.OrganizationID, &user.Email, &user.PasswordHash, &user.Name, &user.Role, &user.Status, &avatarURL,
-		&org.ID, &org.Name, &org.Slug, &org.Plan, &org.SubscriptionStatus, &org.AICreditsLimit, &org.AICreditsUsed, &org.MessageUsageLimit, &org.MessageUsageUsed, &org.BillingCycleStart,
-	)
-
-	if err == sql.ErrNoRows {
+	user, org, err := s.repo.GetAuthDataByEmail(input.Email)
+	if err == repository.ErrNotFound {
 		return nil, ErrInvalidCredentials
 	}
 	if err != nil {
 		return nil, err
-	}
-
-	if avatarURL.Valid {
-		user.AvatarURL = avatarURL.String
 	}
 
 	// Verify password
@@ -159,17 +112,15 @@ func (s *AuthService) Login(input *models.LoginInput) (*models.AuthResponse, err
 	}
 
 	// Update last seen
-	_, _ = s.db.Exec("UPDATE users SET last_seen_at = NOW(), status = 'online' WHERE id = $1", user.ID)
+	_ = s.repo.UpdateLastSeen(user.ID)
 
 	// Fetch counts for compliance
-	err = s.db.QueryRow("SELECT COUNT(*) FROM users WHERE organization_id = $1", org.ID).Scan(&org.UserCount)
+	userCount, channelCount, err := s.repo.GetOrganizationCounts(org.ID)
 	if err != nil {
 		return nil, err
 	}
-	err = s.db.QueryRow("SELECT COUNT(*) FROM channels WHERE organization_id = $1", org.ID).Scan(&org.ChannelCount)
-	if err != nil {
-		return nil, err
-	}
+	org.UserCount = userCount
+	org.ChannelCount = channelCount
 	org.IsOverLimit = !subscription.IsCompliance(org.Plan, org.UserCount, org.ChannelCount)
 
 	// Generate token
@@ -188,25 +139,11 @@ func (s *AuthService) Login(input *models.LoginInput) (*models.AuthResponse, err
 
 // GetUserByID retrieves a user by ID
 func (s *AuthService) GetUserByID(userID uuid.UUID) (*models.User, error) {
-	user := &models.User{}
-	var avatarURL sql.NullString
-
-	err := s.db.QueryRow(`
-		SELECT id, organization_id, email, name, role, status, avatar_url, created_at
-		FROM users WHERE id = $1
-	`, userID).Scan(
-		&user.ID, &user.OrganizationID, &user.Email, &user.Name, &user.Role, &user.Status, &avatarURL, &user.CreatedAt,
-	)
-	if err == nil && avatarURL.Valid {
-		user.AvatarURL = avatarURL.String
-	}
-	if err == sql.ErrNoRows {
+	user, err := s.repo.GetUserByID(userID)
+	if err == repository.ErrNotFound {
 		return nil, ErrUserNotFound
 	}
-	if err != nil {
-		return nil, err
-	}
-	return user, nil
+	return user, err
 }
 
 // generateToken creates a JWT token for a user
@@ -249,42 +186,21 @@ func generateSlug(name string) string {
 
 // GetMe retrieves the current user and their organization with compliance status
 func (s *AuthService) GetMe(userID uuid.UUID) (*models.AuthResponse, error) {
-	user := &models.User{}
-	org := &models.Organization{}
-	var avatarURL sql.NullString
-
-	err := s.db.QueryRow(`
-		SELECT u.id, u.organization_id, u.email, u.name, u.role, u.status, u.avatar_url, u.created_at,
-		       o.id, o.name, o.slug, o.plan, o.subscription_status, o.ai_credits_limit, o.ai_credits_used, o.message_usage_limit, o.message_usage_used, o.billing_cycle_start, o.created_at, o.updated_at
-		FROM users u
-		JOIN organizations o ON o.id = u.organization_id
-		WHERE u.id = $1
-	`, userID).Scan(
-		&user.ID, &user.OrganizationID, &user.Email, &user.Name, &user.Role, &user.Status, &avatarURL, &user.CreatedAt,
-		&org.ID, &org.Name, &org.Slug, &org.Plan, &org.SubscriptionStatus, &org.AICreditsLimit, &org.AICreditsUsed, &org.MessageUsageLimit, &org.MessageUsageUsed, &org.BillingCycleStart, &org.CreatedAt, &org.UpdatedAt,
-	)
-
-	if err == sql.ErrNoRows {
+	user, org, err := s.repo.GetAuthDataByID(userID)
+	if err == repository.ErrNotFound {
 		return nil, ErrUserNotFound
 	}
 	if err != nil {
 		return nil, err
 	}
 
-	if avatarURL.Valid {
-		user.AvatarURL = avatarURL.String
-	}
-
 	// Fetch counts for compliance
-	err = s.db.QueryRow("SELECT COUNT(*) FROM users WHERE organization_id = $1", org.ID).Scan(&org.UserCount)
+	userCount, channelCount, err := s.repo.GetOrganizationCounts(org.ID)
 	if err != nil {
 		return nil, err
 	}
-	err = s.db.QueryRow("SELECT COUNT(*) FROM channels WHERE organization_id = $1", org.ID).Scan(&org.ChannelCount)
-	if err != nil {
-		return nil, err
-	}
-
+	org.UserCount = userCount
+	org.ChannelCount = channelCount
 	org.IsOverLimit = !subscription.IsCompliance(org.Plan, org.UserCount, org.ChannelCount)
 
 	return &models.AuthResponse{

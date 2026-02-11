@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sidji-omnichannel/internal/config"
+	"github.com/sidji-omnichannel/internal/domain/ports/service"
 	"github.com/sidji-omnichannel/internal/models"
 	"github.com/sidji-omnichannel/internal/services"
 	"github.com/sidji-omnichannel/internal/websocket"
@@ -20,25 +20,24 @@ import (
 // WebhookHandler handles incoming webhooks from Meta (WhatsApp & Instagram)
 type WebhookHandler struct {
 	cfg            *config.Config
-	channelService *services.ChannelService
-	contactService *services.ContactService
-	// ...
-	convService    *services.ConversationService
-	messageService *services.MessageService
+	channelService service.ChannelService
+	contactService service.ContactService
+	convService    service.ConversationService
+	messageService service.MessageService
 	mediaService   *services.MediaService
-	aiService      *services.AIService    // Added AIService
+	aiService      service.AIService
 	hub            *websocket.Hub
 }
 
 // NewWebhookHandler creates a new webhook handler
 func NewWebhookHandler(
 	cfg *config.Config,
-	channelService *services.ChannelService,
-	contactService *services.ContactService,
-	convService *services.ConversationService,
-	messageService *services.MessageService,
+	channelService service.ChannelService,
+	contactService service.ContactService,
+	convService service.ConversationService,
+	messageService service.MessageService,
 	mediaService *services.MediaService,
-	aiService *services.AIService, // Added parameter
+	aiService service.AIService,
 	hub *websocket.Hub,
 ) *WebhookHandler {
 	return &WebhookHandler{
@@ -232,104 +231,6 @@ func (h *WebhookHandler) Handle(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "received"})
 }
 
-// HandleTwilio processes incoming webhooks from Twilio
-func (h *WebhookHandler) HandleTwilio(c *gin.Context) {
-	// Twilio sends data as application/x-www-form-urlencoded
-	from := c.PostForm("From") // e.g. "whatsapp:+12345678"
-	to := c.PostForm("To")     // e.g. "whatsapp:+98765432"
-	body := c.PostForm("Body")
-	msgSid := c.PostForm("SmsSid")
-	numMedia := c.PostForm("NumMedia")
-
-	fmt.Printf("[Twilio Webhook] From: %s, To: %s, Body: %s, Media: %s\n", from, to, body, numMedia)
-
-	if from == "" || to == "" {
-		c.JSON(http.StatusOK, gin.H{"status": "ignored"})
-		return
-	}
-
-	// Remove "whatsapp:" prefix
-	cleanFrom := strings.TrimPrefix(from, "whatsapp:")
-	cleanTo := strings.TrimPrefix(to, "whatsapp:")
-
-	// Find Channel by To number (the "From" in our provider config, but "To" in Twilio incoming webhook)
-	channel, err := h.channelService.GetChannelByPhoneNumberID(cleanTo)
-	if err != nil {
-		fmt.Printf("[Twilio Webhook] Channel for %s not found: %v\n", cleanTo, err)
-		c.JSON(http.StatusOK, gin.H{"status": "ignored"})
-		return
-	}
-
-	// 1. Find or create contact
-	contactName := cleanFrom
-	contact, err := h.contactService.FindOrCreateByWhatsAppID(channel.OrganizationID, cleanFrom, contactName)
-	if err != nil {
-		fmt.Printf("[Twilio Webhook] Error creating contact: %v\n", err)
-		c.JSON(http.StatusOK, gin.H{"status": "ignored"})
-		return
-	}
-
-	// 2. Find or create conversation
-	conv, err := h.convService.FindOrCreate(channel.OrganizationID, channel.ID, contact.ID)
-	if err != nil {
-		fmt.Printf("[Twilio Webhook] Error creating conversation: %v\n", err)
-		c.JSON(http.StatusOK, gin.H{"status": "ignored"})
-		return
-	}
-
-	// 3. Create message record
-	message := &models.Message{
-		ConversationID: conv.ID,
-		SenderType:     models.SenderContact,
-		SenderID:       contact.ID,
-		Content:        body,
-		ExternalID:     msgSid,
-		MessageType:    models.MessageTypeText,
-		Status:         models.MessageStatusDelivered,
-	}
-
-	// Handle media if present
-	if numMedia != "" && numMedia != "0" {
-		mediaURL := c.PostForm("MediaUrl0")
-		contentType := c.PostForm("MediaContentType0")
-		if mediaURL != "" {
-			message.MediaURL = mediaURL
-			message.MediaMimeType = contentType
-			if strings.HasPrefix(contentType, "image/") {
-				message.MessageType = models.MessageTypeImage
-			} else if strings.HasPrefix(contentType, "video/") {
-				message.MessageType = models.MessageTypeVideo
-			} else if strings.HasPrefix(contentType, "audio/") {
-				message.MessageType = models.MessageTypeAudio
-			} else {
-				message.MessageType = models.MessageTypeDocument
-			}
-		}
-	}
-
-	if err := h.messageService.Create(message); err != nil {
-		fmt.Printf("[Twilio Webhook] Error saving message: %v\n", err)
-	}
-
-	// 4. Broadcast via WebSocket
-	if h.hub != nil {
-		h.hub.Broadcast(channel.OrganizationID, "message:new", message)
-		updatedConv, err := h.convService.GetByID(channel.OrganizationID, conv.ID)
-		if err == nil {
-			updatedConv.LastMessage = message
-			unreadCount, _ := h.messageService.CountUnread(conv.ID)
-			updatedConv.UnreadCount = unreadCount
-			h.hub.Broadcast(channel.OrganizationID, "conversation:update", updatedConv)
-		}
-	}
-
-	// 5. AI Auto-reply
-	if message.MessageType == models.MessageTypeText && message.Content != "" {
-		h.processAIMessage(channel.ID, contact.ID, conv.ID, message.Content)
-	}
-
-	c.JSON(http.StatusOK, gin.H{"status": "received"})
-}
 
 // handleWhatsApp processes WhatsApp webhook events
 func (h *WebhookHandler) handleWhatsApp(payload *MetaWebhookPayload) {

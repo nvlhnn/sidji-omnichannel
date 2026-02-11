@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/sidji-omnichannel/internal/adapters/db/postgres"
 	"github.com/sidji-omnichannel/internal/models"
 	"github.com/sidji-omnichannel/internal/testutil"
 )
@@ -21,7 +22,10 @@ func TestMessageService_Create(t *testing.T) {
 	conv := testutil.CreateTestConversation(t, db, org.ID, channel.ID, contact.ID)
 	user := testutil.CreateTestUser(t, db, org.ID, models.RoleAgent)
 
-	service := NewMessageService(db)
+	mr := postgres.NewMessageRepository(db)
+	cr := postgres.NewConversationRepository(db)
+	ur := postgres.NewUserRepository(db)
+	service := NewMessageService(mr, cr, ur)
 
 	tests := []struct {
 		name    string
@@ -107,7 +111,10 @@ func TestMessageService_List(t *testing.T) {
 	conv := testutil.CreateTestConversation(t, db, org.ID, channel.ID, contact.ID)
 	user := testutil.CreateTestUser(t, db, org.ID, models.RoleAgent)
 
-	service := NewMessageService(db)
+	mr := postgres.NewMessageRepository(db)
+	cr := postgres.NewConversationRepository(db)
+	ur := postgres.NewUserRepository(db)
+	service := NewMessageService(mr, cr, ur)
 
 	// Create some messages
 	for i := 0; i < 5; i++ {
@@ -196,7 +203,10 @@ func TestMessageService_UpdateStatus(t *testing.T) {
 	conv := testutil.CreateTestConversation(t, db, org.ID, channel.ID, contact.ID)
 	user := testutil.CreateTestUser(t, db, org.ID, models.RoleAgent)
 
-	service := NewMessageService(db)
+	mr := postgres.NewMessageRepository(db)
+	cr := postgres.NewConversationRepository(db)
+	ur := postgres.NewUserRepository(db)
+	service := NewMessageService(mr, cr, ur)
 
 	// Create a message with external ID
 	msg := &models.Message{
@@ -280,7 +290,10 @@ func TestMessageService_MarkAsRead(t *testing.T) {
 	contact := testutil.CreateTestContact(t, db, org.ID)
 	conv := testutil.CreateTestConversation(t, db, org.ID, channel.ID, contact.ID)
 
-	service := NewMessageService(db)
+	mr := postgres.NewMessageRepository(db)
+	cr := postgres.NewConversationRepository(db)
+	ur := postgres.NewUserRepository(db)
+	service := NewMessageService(mr, cr, ur)
 
 	// Create messages from contact
 	for i := 0; i < 3; i++ {
@@ -328,7 +341,10 @@ func TestMessageService_GetByExternalID(t *testing.T) {
 	contact := testutil.CreateTestContact(t, db, org.ID)
 	conv := testutil.CreateTestConversation(t, db, org.ID, channel.ID, contact.ID)
 
-	service := NewMessageService(db)
+	mr := postgres.NewMessageRepository(db)
+	cr := postgres.NewConversationRepository(db)
+	ur := postgres.NewUserRepository(db)
+	service := NewMessageService(mr, cr, ur)
 
 	// Create a message
 	msg := &models.Message{
