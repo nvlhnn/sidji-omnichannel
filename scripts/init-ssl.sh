@@ -21,7 +21,14 @@ echo "   API:      $DOMAIN_API"
 mkdir -p certbot/conf
 mkdir -p certbot/www
 
-# Step 1: Create a temporary nginx config (HTTP only, for Let's Encrypt)
+# Step 1: Stop everything first
+echo "⏹️  Stopping all containers..."
+docker compose -f docker-compose.prod.yml down 2>/dev/null || true
+
+# Step 2: Create a temporary nginx config (HTTP only)
+echo "📝 Creating temporary HTTP-only nginx config..."
+mv nginx/conf.d/default.conf nginx/conf.d/default.conf.bak
+
 cat > nginx/conf.d/temp-ssl.conf << TEMPCONF
 server {
     listen 80;
@@ -32,24 +39,33 @@ server {
     }
 
     location / {
-        return 200 'Sidji is setting up SSL...';
+        return 200 'Sidji SSL setup in progress...';
         add_header Content-Type text/plain;
     }
 }
 TEMPCONF
 
-# Step 2: Start nginx with temporary config
+# Step 3: Start ONLY nginx (standalone, no dependencies)
 echo "🚀 Starting nginx for SSL verification..."
-mv nginx/conf.d/default.conf nginx/conf.d/default.conf.bak
-docker compose -f docker-compose.prod.yml up -d nginx
+docker run -d --name sidji-nginx-temp \
+    -p 80:80 \
+    -v "$(pwd)/nginx/nginx.conf:/etc/nginx/nginx.conf:ro" \
+    -v "$(pwd)/nginx/conf.d:/etc/nginx/conf.d:ro" \
+    -v "$(pwd)/certbot/www:/var/www/certbot:ro" \
+    nginx:alpine
 
-# Wait for nginx to start
-sleep 5
+sleep 3
 
-# Step 3: Get SSL certificate for BOTH domains (single cert)
+# Verify nginx is serving
+echo "🔍 Testing HTTP access..."
+curl -s http://localhost/ || echo "Warning: localhost test failed, but external access may still work"
+
+# Step 4: Get SSL certificate using standalone certbot container
 echo "📜 Requesting SSL certificate for both domains..."
-docker compose -f docker-compose.prod.yml run --rm certbot \
-    certbot certonly --webroot \
+docker run --rm \
+    -v "$(pwd)/certbot/conf:/etc/letsencrypt" \
+    -v "$(pwd)/certbot/www:/var/www/certbot" \
+    certbot/certbot certonly --webroot \
     --webroot-path=/var/www/certbot \
     --email "$EMAIL" \
     --agree-tos \
@@ -57,13 +73,11 @@ docker compose -f docker-compose.prod.yml run --rm certbot \
     -d "$DOMAIN_FRONTEND" \
     -d "$DOMAIN_API"
 
-# Step 4: Clean up and restore real config
-echo "🔄 Restoring production nginx config..."
+# Step 5: Clean up
+echo "🔄 Cleaning up..."
+docker stop sidji-nginx-temp && docker rm sidji-nginx-temp
 rm nginx/conf.d/temp-ssl.conf
 mv nginx/conf.d/default.conf.bak nginx/conf.d/default.conf
-
-# Stop nginx (deploy.sh will start everything)
-docker compose -f docker-compose.prod.yml down
 
 echo ""
 echo "✅ SSL setup complete!"
@@ -71,5 +85,4 @@ echo "   Certificate covers both:"
 echo "   - $DOMAIN_FRONTEND"
 echo "   - $DOMAIN_API"
 echo ""
-echo "📌 Certificate will auto-renew via the certbot container."
-echo "📌 Next: run ./scripts/deploy.sh --build --migrate"
+echo "📌 Now deploy with: ./scripts/deploy.sh --build"
