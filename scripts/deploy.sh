@@ -24,14 +24,14 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 COMPOSE_FILE="docker-compose.prod.yml"
-BUILD_FLAG=""
+BUILD_FLAG=false
 MIGRATE_FLAG=false
 
 # Parse arguments
 for arg in "$@"; do
     case $arg in
         --build)
-            BUILD_FLAG="--build"
+            BUILD_FLAG=true
             ;;
         --migrate)
             MIGRATE_FLAG=true
@@ -81,8 +81,12 @@ echo -e "${YELLOW}📦 Step 2/6: Pulling latest base images...${NC}"
 docker compose -f $COMPOSE_FILE pull nginx
 
 # Step 3: Build application images
-echo -e "${YELLOW}🔨 Step 3/6: Building application images...${NC}"
-docker compose -f $COMPOSE_FILE build $BUILD_FLAG api web
+if [ "$BUILD_FLAG" = true ]; then
+    echo -e "${YELLOW}🔨 Step 3/6: Building application images...${NC}"
+    docker compose -f $COMPOSE_FILE build api web
+else
+    echo -e "${BLUE}⏭️  Step 3/6: Skipping build (use --build to rebuild)${NC}"
+fi
 
 # Step 4: Stop existing containers (graceful)
 echo -e "${YELLOW}⏳ Step 4/6: Gracefully stopping existing containers...${NC}"
