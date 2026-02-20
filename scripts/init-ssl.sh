@@ -3,14 +3,14 @@
 # Sidji Omnichannel - Initial SSL Setup
 # ==============================================
 # Run this ONCE on your VPS to get SSL certificates
-# for both sidji.nvlhnn.dpdns.org and api.sidji.nvlhnn.dpdns.org
+# for both sidji.nvlhnn.dpdns.org and sidji-api.nvlhnn.dpdns.org
 # Usage: ./scripts/init-ssl.sh [email]
 # ==============================================
 
 set -e
 
 DOMAIN_FRONTEND="sidji.nvlhnn.dpdns.org"
-DOMAIN_API="api.sidji.nvlhnn.dpdns.org"
+DOMAIN_API="sidji-api.nvlhnn.dpdns.org"
 EMAIL="${1:-admin@nvlhnn.dpdns.org}"
 
 echo "🔒 Setting up SSL for:"
