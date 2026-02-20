@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 	"time"
 
@@ -69,6 +70,7 @@ func (h *ConversationHandler) List(c *gin.Context) {
 
 	conversations, total, err := h.conversationService.List(orgID, &filter)
 	if err != nil {
+		log.Printf("[ERROR] List conversations failed for org %s: %v", orgID, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list conversations"})
 		return
 	}
@@ -106,6 +108,7 @@ func (h *ConversationHandler) Get(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Conversation not found"})
 			return
 		}
+		log.Printf("[ERROR] Get conversation failed: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get conversation"})
 		return
 	}
