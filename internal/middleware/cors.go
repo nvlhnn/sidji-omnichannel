@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	"github.com/sidji-omnichannel/internal/config"
 )
@@ -10,9 +12,10 @@ func CORS(cfg *config.AppConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		origin := c.GetHeader("Origin")
 		
-		// Allow the configured frontend URL
+		// Allow the configured frontend URL, development mode, or localhost
 		allowedOrigin := cfg.FrontendURL
-		if origin == allowedOrigin || cfg.Env == "development" {
+		isAllowed := origin == allowedOrigin || cfg.Env == "development" || strings.HasPrefix(origin, "http://localhost")
+		if isAllowed {
 			c.Header("Access-Control-Allow-Origin", origin)
 		}
 
