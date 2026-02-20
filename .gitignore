@@ -24,6 +24,7 @@ node_modules/
 
 # SSL Certificates
 certbot/
+ssl/
 
 # IDE
 .idea/
