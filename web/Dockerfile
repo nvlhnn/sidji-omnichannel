@@ -28,6 +28,9 @@ ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
 ENV NEXT_PUBLIC_META_APP_ID=$NEXT_PUBLIC_META_APP_ID
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Ensure public directory exists
+RUN mkdir -p public
+
 RUN npm run build
 
 # ==============================================
