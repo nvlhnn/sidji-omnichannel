@@ -39,7 +39,15 @@ func (p *GeminiProvider) EmbedText(ctx context.Context, text string) ([]float32,
 	if res.Embedding == nil {
 		return nil, fmt.Errorf("no embedding returned")
 	}
-	return res.Embedding.Values, nil
+
+	// Truncate to 1536 dimensions to match OpenAI ada-002,
+	// so embeddings are interchangeable between providers.
+	values := res.Embedding.Values
+	const targetDim = 1536
+	if len(values) > targetDim {
+		values = values[:targetDim]
+	}
+	return values, nil
 }
 
 func (p *GeminiProvider) GenerateReply(ctx context.Context, config *models.AIConfig, userQuery string, contextDocs []string, history []models.Message) (string, error) {
