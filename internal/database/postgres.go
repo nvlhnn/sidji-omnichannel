@@ -3,9 +3,11 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"net/url"
+	"strings"
 	"time"
 
-	_ "github.com/lib/pq"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/sidji-omnichannel/internal/config"
 )
 
@@ -22,7 +24,19 @@ func NewPostgres(cfg *config.DatabaseConfig) (*sql.DB, error) {
 		)
 	}
 
-	db, err := sql.Open("postgres", dsn)
+	// For Neon/PgBouncer compatibility: disable prepared statements
+	// by adding default_query_exec_mode=simple_protocol
+	if strings.Contains(dsn, "neon.tech") {
+		u, err := url.Parse(dsn)
+		if err == nil {
+			q := u.Query()
+			q.Set("default_query_exec_mode", "simple_protocol")
+			u.RawQuery = q.Encode()
+			dsn = u.String()
+		}
+	}
+
+	db, err := sql.Open("pgx", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
@@ -32,11 +46,11 @@ func NewPostgres(cfg *config.DatabaseConfig) (*sql.DB, error) {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	// Connection pool settings (tuned for Neon serverless pooler)
+	// Connection pool settings (tuned for Neon serverless)
 	db.SetMaxOpenConns(10)
 	db.SetMaxIdleConns(5)
-	db.SetConnMaxLifetime(5 * time.Minute)  // Recycle connections before Neon drops them
-	db.SetConnMaxIdleTime(30 * time.Second)  // Don't hold idle connections too long
+	db.SetConnMaxLifetime(5 * time.Minute)
+	db.SetConnMaxIdleTime(30 * time.Second)
 
 	return db, nil
 }
