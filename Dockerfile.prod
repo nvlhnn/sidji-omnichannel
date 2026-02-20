@@ -1,0 +1,50 @@
+# ==============================================
+# Stage 1: Build the Go binary
+# ==============================================
+FROM golang:1.23-alpine AS builder
+
+WORKDIR /build
+
+# Install git for go mod download
+RUN apk add --no-cache git
+
+# Cache dependencies
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Build optimized binary (stripped, static)
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -ldflags="-w -s" \
+    -o /sidji-omnichannel \
+    ./cmd/server
+
+# ==============================================
+# Stage 2: Minimal production image
+# ==============================================
+FROM alpine:3.20
+
+WORKDIR /app
+
+# Install essentials only
+RUN apk --no-cache add ca-certificates tzdata wget \
+    && rm -rf /var/cache/apk/*
+
+# Create non-root user
+RUN addgroup -g 1001 -S sidji && \
+    adduser -u 1001 -S sidji -G sidji
+
+# Copy binary and migrations
+COPY --from=builder /sidji-omnichannel .
+COPY --from=builder /build/migrations ./migrations
+
+# Create uploads directory
+RUN mkdir -p /app/uploads && chown -R sidji:sidji /app
+
+USER sidji
+
+EXPOSE 8080
+
+CMD ["./sidji-omnichannel"]

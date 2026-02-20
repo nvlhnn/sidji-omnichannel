@@ -25,11 +25,13 @@ type AppConfig struct {
 }
 
 type DatabaseConfig struct {
+	URL      string // Full connection string (e.g. DATABASE_URL from Neon)
 	Host     string
 	Port     int
 	User     string
 	Password string
 	Name     string
+	SSLMode  string
 }
 
 type RedisConfig struct {
@@ -69,11 +71,13 @@ func Load() (*Config, error) {
 			FrontendURL: getEnv("FRONTEND_URL", "http://localhost:3000"),
 		},
 		Database: DatabaseConfig{
+			URL:      getEnv("DATABASE_URL", ""),
 			Host:     getEnv("DB_HOST", "localhost"),
 			Port:     getEnvInt("DB_PORT", 5432),
 			User:     getEnv("DB_USER", "sidji"),
 			Password: getEnv("DB_PASSWORD", "sidji123"),
 			Name:     getEnv("DB_NAME", "sidji"),
+			SSLMode:  getEnv("DB_SSLMODE", "disable"),
 		},
 		Redis: RedisConfig{
 			Host:     getEnv("REDIS_HOST", "localhost"),
