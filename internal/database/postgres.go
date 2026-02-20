@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	_ "github.com/lib/pq"
 	"github.com/sidji-omnichannel/internal/config"
@@ -31,9 +32,11 @@ func NewPostgres(cfg *config.DatabaseConfig) (*sql.DB, error) {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	// Set connection pool settings (conservative for external DB / pgbouncer)
+	// Connection pool settings (tuned for Neon serverless pooler)
 	db.SetMaxOpenConns(10)
 	db.SetMaxIdleConns(5)
+	db.SetConnMaxLifetime(5 * time.Minute)  // Recycle connections before Neon drops them
+	db.SetConnMaxIdleTime(30 * time.Second)  // Don't hold idle connections too long
 
 	return db, nil
 }
