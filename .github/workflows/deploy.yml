@@ -19,6 +19,6 @@ jobs:
           port: 22
           script_stop: true
           script: |
-            cd /opt/sidji-omnichannel
+            cd /opt/sidji-omnichannel/sidji-omnichannel
             echo "🚀 Auto-deploy triggered by push to main"
             ./scripts/deploy.sh --build
