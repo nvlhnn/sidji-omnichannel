@@ -2,12 +2,12 @@
 # ==============================================
 # Sidji Omnichannel - Production Deploy Script
 # ==============================================
-# Usage: ./scripts/deploy.sh [--build] [--migrate]
+# Usage: ./scripts/deploy.sh [--build]
 #
 # This script:
 #   1. Pulls latest code from GitHub
 #   2. Builds Docker images
-#   3. Optionally runs DB migrations on Neon
+#   3. Auto-runs DB migrations on API startup
 #   4. Starts all services
 #
 # .env.production lives ONLY on the VPS (not in git)
@@ -25,16 +25,12 @@ NC='\033[0m'
 
 COMPOSE_FILE="docker-compose.prod.yml"
 BUILD_FLAG=false
-MIGRATE_FLAG=false
 
 # Parse arguments
 for arg in "$@"; do
     case $arg in
         --build)
             BUILD_FLAG=true
-            ;;
-        --migrate)
-            MIGRATE_FLAG=true
             ;;
     esac
 done
@@ -92,17 +88,17 @@ fi
 echo -e "${YELLOW}⏳ Step 4/6: Gracefully stopping existing containers...${NC}"
 docker compose -f $COMPOSE_FILE down --timeout 30
 
-# Step 5: Run migrations if requested
-if [ "$MIGRATE_FLAG" = true ]; then
-    echo -e "${YELLOW}📊 Step 5/6: Running database migrations on Neon...${NC}"
-
-    for f in migrations/*.up.sql; do
-        echo -e "  Applying: $f"
-        psql "$DATABASE_URL" -f "$f" 2>/dev/null || true
-    done
-    echo -e "${GREEN}  ✅ Migrations complete${NC}"
+# Step 5: Seed schema_migrations if needed (first-time setup for auto-migrator)
+echo -e "${YELLOW}📊 Step 5/6: Checking migration tracking...${NC}"
+if command -v psql &> /dev/null && [ -n "$DATABASE_URL" ]; then
+    # Create tracking table and seed existing migrations
+    psql "$DATABASE_URL" -c "CREATE TABLE IF NOT EXISTS schema_migrations (version VARCHAR(255) PRIMARY KEY, applied_at TIMESTAMP WITH TIME ZONE DEFAULT NOW());" 2>/dev/null || true
+    if [ -f migrations/seed_migrations.sql ]; then
+        psql "$DATABASE_URL" -f migrations/seed_migrations.sql 2>/dev/null || true
+    fi
+    echo -e "${GREEN}  ✅ Migration tracking ready (auto-runs on API boot)${NC}"
 else
-    echo -e "${BLUE}⏭️  Step 5/6: Skipping migrations (use --migrate to run)${NC}"
+    echo -e "${BLUE}  ⏭️  psql not available — migrations will auto-run on API startup${NC}"
 fi
 
 # Step 6: Start all services
