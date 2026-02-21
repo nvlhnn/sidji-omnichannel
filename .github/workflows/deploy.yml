@@ -15,10 +15,10 @@ jobs:
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_PORT || 22 }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: 22
           script_stop: true
           script: |
             cd /opt/sidji-omnichannel
-            echo "🚀 Auto-deploy triggered by push to hexagonal"
+            echo "🚀 Auto-deploy triggered by push to main"
             ./scripts/deploy.sh --build
