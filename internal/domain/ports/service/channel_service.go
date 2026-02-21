@@ -17,11 +17,13 @@ type ChannelService interface {
 	GetChannelByPhoneNumberID(phoneNumberID string) (*models.Channel, error)
 	GetChannelByIGUserID(igUserID string) (*models.Channel, error)
 	GetChannelByFacebookPageID(pageID string) (*models.Channel, error)
+	GetChannelByTikTokOpenID(tiktokOpenID string) (*models.Channel, error)
 	GetInstagramUserProfile(userID, accessToken string) (string, string, string, error)
 	GetFacebookUserProfile(psid, accessToken string) (string, string, error)
 	ConnectInstagram(orgID uuid.UUID, accessToken string, selectedID string) (*models.Channel, error)
 	ConnectWhatsApp(orgID uuid.UUID, accessToken string, selectedID string) (*models.Channel, error)
 	ConnectFacebook(orgID uuid.UUID, accessToken string, selectedID string) ([]*models.Channel, error)
+	ConnectTikTok(orgID uuid.UUID, code string) (*models.Channel, error)
 	DiscoverMetaAccounts(accessToken string) (map[string]interface{}, error)
 	RefreshTokens() error
 	StartTokenRefresher()

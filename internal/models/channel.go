@@ -14,6 +14,7 @@ const (
 	ChannelWhatsApp  ChannelType = "whatsapp"
 	ChannelInstagram ChannelType = "instagram"
 	ChannelFacebook  ChannelType = "facebook"
+	ChannelTikTok    ChannelType = "tiktok"
 )
 
 // ChannelStatus defines the status of a channel connection
@@ -37,6 +38,7 @@ type Channel struct {
 	PhoneNumberID  string          `json:"phone_number_id,omitempty"` // For WhatsApp
 	IGUserID       string          `json:"ig_user_id,omitempty"`      // For Instagram
 	FacebookPageID string          `json:"facebook_page_id,omitempty"` // For Facebook
+	TikTokOpenID   string          `json:"tiktok_open_id,omitempty"`   // For TikTok
 	Status         ChannelStatus   `json:"status"`
 	CreatedAt      time.Time       `json:"created_at"`
 	UpdatedAt      time.Time       `json:"updated_at"`
@@ -63,9 +65,18 @@ type FacebookConfig struct {
 	AccessToken string `json:"access_token"` // Page-scoped access token
 }
 
+// TikTokConfig holds TikTok-specific configuration
+type TikTokConfig struct {
+	OpenID       string `json:"open_id"`
+	Username     string `json:"username"`
+	DisplayName  string `json:"display_name"`
+	AvatarURL    string `json:"avatar_url"`
+	RefreshToken string `json:"refresh_token"`
+}
+
 // CreateChannelInput for connecting a new channel
 type CreateChannelInput struct {
-	Type        ChannelType `json:"type" binding:"required,oneof=whatsapp instagram facebook"`
+	Type        ChannelType `json:"type" binding:"required,oneof=whatsapp instagram facebook tiktok"`
 	Provider    string      `json:"provider"` // defaults to meta
 	Name        string      `json:"name" binding:"required,min=2,max=100"`
 	AccessToken string      `json:"access_token"` // Required for Meta
@@ -76,6 +87,8 @@ type CreateChannelInput struct {
 	IGUserID string `json:"ig_user_id,omitempty"`
 	// Facebook specific
 	FacebookPageID string `json:"facebook_page_id,omitempty"`
+	// TikTok specific
+	TikTokOpenID string `json:"tiktok_open_id,omitempty"`
 }
 
 // ConnectInstagramInput for auto-connecting Instagram
@@ -94,6 +107,11 @@ type ConnectWhatsAppInput struct {
 type ConnectFacebookInput struct {
 	AccessToken string `json:"access_token" binding:"required"`
 	SelectedID  string `json:"selected_id,omitempty"`
+}
+
+// ConnectTikTokInput for connecting TikTok via OAuth code exchange
+type ConnectTikTokInput struct {
+	Code string `json:"code" binding:"required"` // OAuth authorization code from TikTok login
 }
 
 // ChannelPublic is the public representation of a channel

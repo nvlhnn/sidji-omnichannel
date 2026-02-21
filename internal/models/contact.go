@@ -20,6 +20,7 @@ type Contact struct {
 	WhatsAppID  string `json:"whatsapp_id,omitempty"`
 	InstagramID string `json:"instagram_id,omitempty"`
 	FacebookID  string `json:"facebook_id,omitempty"`
+	TikTokID    string `json:"tiktok_id,omitempty"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
@@ -32,6 +33,7 @@ type CreateContactInput struct {
 	WhatsAppID  string `json:"whatsapp_id,omitempty"`
 	InstagramID string `json:"instagram_id,omitempty"`
 	FacebookID  string `json:"facebook_id,omitempty"`
+	TikTokID    string `json:"tiktok_id,omitempty"`
 }
 
 // UpdateContactInput for updating contact info

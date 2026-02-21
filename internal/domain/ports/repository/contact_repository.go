@@ -12,6 +12,7 @@ type ContactRepository interface {
 	GetByWhatsAppID(orgID uuid.UUID, whatsAppID string) (*models.Contact, error)
 	GetByInstagramID(orgID uuid.UUID, instagramID string) (*models.Contact, error)
 	GetByFacebookID(orgID uuid.UUID, facebookID string) (*models.Contact, error)
+	GetByTikTokID(orgID uuid.UUID, tiktokID string) (*models.Contact, error)
 	Create(contact *models.Contact) error
 	Update(orgID, contactID uuid.UUID, input *models.UpdateContactInput) (*models.Contact, error)
 	UpdateNameAndAvatar(contactID uuid.UUID, name, avatarURL string) error

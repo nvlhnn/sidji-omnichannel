@@ -12,6 +12,7 @@ import (
 	"github.com/sidji-omnichannel/internal/domain/ports/repository"
 	"github.com/sidji-omnichannel/internal/integrations"
 	"github.com/sidji-omnichannel/internal/integrations/meta"
+	"github.com/sidji-omnichannel/internal/integrations/tiktok"
 	"github.com/sidji-omnichannel/internal/models"
 	"github.com/sidji-omnichannel/internal/subscription"
 )
@@ -22,11 +23,12 @@ var (
 
 // ChannelService handles channel operations and message sending
 type ChannelService struct {
-	repo       repository.ChannelRepository
-	orgRepo    repository.OrganizationRepository
-	cfg        *config.Config
-	metaClient *meta.MetaClient
-	providers  map[string]integrations.MessageProvider
+	repo         repository.ChannelRepository
+	orgRepo      repository.OrganizationRepository
+	cfg          *config.Config
+	metaClient   *meta.MetaClient
+	tiktokClient *tiktok.TikTokClient
+	providers    map[string]integrations.MessageProvider
 }
 
 // NewChannelService creates a new channel service
@@ -36,16 +38,19 @@ func NewChannelService(
 	cfg *config.Config,
 ) *ChannelService {
 	metaClient := meta.NewMetaClient(&cfg.Meta)
+	tiktokClient := tiktok.NewTikTokClient(&cfg.TikTok)
 	
 	providers := make(map[string]integrations.MessageProvider)
 	providers["meta"] = meta.NewMetaProvider(metaClient)
+	providers["tiktok"] = tiktok.NewTikTokProvider(tiktokClient)
 
 	return &ChannelService{
-		repo:       repo,
-		orgRepo:    orgRepo,
-		cfg:        cfg,
-		metaClient: metaClient,
-		providers:  providers,
+		repo:         repo,
+		orgRepo:      orgRepo,
+		cfg:          cfg,
+		metaClient:   metaClient,
+		tiktokClient: tiktokClient,
+		providers:    providers,
 	}
 }
 
@@ -118,6 +123,10 @@ func (s *ChannelService) Create(orgID uuid.UUID, input *models.CreateChannelInpu
 	} else if input.Type == models.ChannelFacebook {
 		configData = models.FacebookConfig{
 			PageID: input.FacebookPageID,
+		}
+	} else if input.Type == models.ChannelTikTok {
+		configData = models.TikTokConfig{
+			OpenID: input.TikTokOpenID,
 		}
 	}
 
@@ -424,6 +433,15 @@ func (s *ChannelService) GetChannelByFacebookPageID(pageID string) (*models.Chan
 	return ch, err
 }
 
+// GetChannelByTikTokOpenID finds a channel by TikTok open ID
+func (s *ChannelService) GetChannelByTikTokOpenID(tiktokOpenID string) (*models.Channel, error) {
+	ch, err := s.repo.GetByTikTokOpenID(tiktokOpenID)
+	if err == repository.ErrNotFound {
+		return nil, ErrChannelNotFound
+	}
+	return ch, err
+}
+
 // ConnectFacebook automatically connects Facebook Pages
 func (s *ChannelService) ConnectFacebook(orgID uuid.UUID, accessToken string, selectedID string) ([]*models.Channel, error) {
 	if s.cfg.Meta.AppID != "" && s.cfg.Meta.AppSecret != "" {
@@ -558,4 +576,87 @@ func (s *ChannelService) GetFacebookUserProfile(psid, accessToken string) (strin
 	}
 	name := fmt.Sprintf("%s %s", profile.FirstName, profile.LastName)
 	return name, profile.ProfilePicture, nil
+}
+
+// ConnectTikTok connects a TikTok channel via OAuth code exchange
+func (s *ChannelService) ConnectTikTok(orgID uuid.UUID, code string) (*models.Channel, error) {
+	// Exchange code for access token
+	tokenResp, err := s.tiktokClient.ExchangeCodeForToken(code)
+	if err != nil {
+		return nil, fmt.Errorf("failed to exchange TikTok code: %w", err)
+	}
+
+	openID := tokenResp.Data.OpenID
+	accessToken := tokenResp.Data.AccessToken
+	refreshToken := tokenResp.Data.RefreshToken
+
+	if openID == "" {
+		return nil, errors.New("tiktok oauth returned empty open_id")
+	}
+
+	// Check if channel already exists
+	existing, err := s.GetChannelByTikTokOpenID(openID)
+	if err == nil {
+		// Update existing channel
+		existing.AccessToken = accessToken
+		existing.Status = models.ChannelStatusActive
+		// Update config with new refresh token
+		tikTokProvider := s.providers["tiktok"].(*tiktok.TikTokProvider)
+		displayName, username, avatarURL, _ := tikTokProvider.GetUserProfile(accessToken)
+		configData := models.TikTokConfig{
+			OpenID:       openID,
+			Username:     username,
+			DisplayName:  displayName,
+			AvatarURL:    avatarURL,
+			RefreshToken: refreshToken,
+		}
+		configJSON, _ := json.Marshal(configData)
+		existing.Config = configJSON
+		if err := s.repo.Update(existing); err != nil {
+			return nil, err
+		}
+		return existing, nil
+	}
+
+	// Get user profile
+	tikTokProvider := s.providers["tiktok"].(*tiktok.TikTokProvider)
+	displayName, username, avatarURL, _ := tikTokProvider.GetUserProfile(accessToken)
+
+	channelName := "TikTok"
+	if displayName != "" {
+		channelName = displayName + " (TikTok)"
+	} else if username != "" {
+		channelName = "@" + username + " (TikTok)"
+	}
+
+	// Build config
+	configData := models.TikTokConfig{
+		OpenID:       openID,
+		Username:     username,
+		DisplayName:  displayName,
+		AvatarURL:    avatarURL,
+		RefreshToken: refreshToken,
+	}
+	configJSON, err := json.Marshal(configData)
+	if err != nil {
+		return nil, err
+	}
+
+	channel := &models.Channel{
+		ID:             uuid.New(),
+		OrganizationID: orgID,
+		Type:           models.ChannelTikTok,
+		Provider:       "tiktok",
+		Name:           channelName,
+		AccessToken:    accessToken,
+		TikTokOpenID:   openID,
+		Config:         configJSON,
+		Status:         models.ChannelStatusActive,
+	}
+
+	if err := s.repo.Create(channel); err != nil {
+		return nil, err
+	}
+
+	return channel, nil
 }

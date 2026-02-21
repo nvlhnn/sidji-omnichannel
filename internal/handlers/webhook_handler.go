@@ -634,3 +634,133 @@ func (h *WebhookHandler) verifySignature(body []byte, signature string) bool {
 	expectedSignature := "sha256=" + hex.EncodeToString(mac.Sum(nil))
 	return hmac.Equal([]byte(signature), []byte(expectedSignature))
 }
+
+// HandleTikTokVerify handles TikTok webhook verification (GET)
+func (h *WebhookHandler) HandleTikTokVerify(c *gin.Context) {
+	// TikTok uses a challenge-response verification
+	challenge := c.Query("challenge")
+	if challenge != "" {
+		c.String(http.StatusOK, challenge)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+}
+
+// HandleTikTok handles incoming TikTok webhook events (POST)
+func (h *WebhookHandler) HandleTikTok(c *gin.Context) {
+	body, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to read body"})
+		return
+	}
+
+	fmt.Printf("[TikTok Webhook] Received raw body: %s\n", string(body))
+
+	// Parse the TikTok webhook payload
+	var payload struct {
+		Event string `json:"event"`
+		// Direct Message event
+		FromUserOpenID string `json:"from_user_open_id"`
+		ToUserOpenID   string `json:"to_user_open_id"`
+		MsgID          string `json:"msg_id"`
+		MsgType        string `json:"msg_type"` // "text", "image", "video", etc.
+		Content        string `json:"content"`
+		CreateTime     int64  `json:"create_time"`
+	}
+
+	if err := json.Unmarshal(body, &payload); err != nil {
+		fmt.Printf("[TikTok Webhook] Failed to parse payload: %v\n", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid payload"})
+		return
+	}
+
+	fmt.Printf("[TikTok Webhook] Event=%s from=%s to=%s msgType=%s\n",
+		payload.Event, payload.FromUserOpenID, payload.ToUserOpenID, payload.MsgType)
+
+	// Only process direct message events
+	if payload.Event != "receive_message" && payload.Event != "" {
+		fmt.Printf("[TikTok Webhook] Ignoring event: %s\n", payload.Event)
+		c.JSON(http.StatusOK, gin.H{"status": "ignored"})
+		return
+	}
+
+	if payload.ToUserOpenID == "" || payload.FromUserOpenID == "" {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+		return
+	}
+
+	// Find channel by TikTok open ID
+	channel, err := h.channelService.GetChannelByTikTokOpenID(payload.ToUserOpenID)
+	if err != nil {
+		fmt.Printf("[TikTok Webhook] Channel not found for open_id=%s: %v\n", payload.ToUserOpenID, err)
+		c.JSON(http.StatusOK, gin.H{"status": "channel_not_found"})
+		return
+	}
+
+	// Find or create contact
+	senderName := "TikTok User"
+	contact, err := h.contactService.FindOrCreateByTikTokID(
+		channel.OrganizationID,
+		payload.FromUserOpenID,
+		senderName,
+		"",
+	)
+	if err != nil {
+		fmt.Printf("[TikTok Webhook] Failed to find/create contact: %v\n", err)
+		c.JSON(http.StatusOK, gin.H{"status": "error"})
+		return
+	}
+
+	// Find or create conversation
+	conv, err := h.convService.FindOrCreate(channel.OrganizationID, channel.ID, contact.ID)
+	if err != nil {
+		fmt.Printf("[TikTok Webhook] Failed to find/create conversation: %v\n", err)
+		c.JSON(http.StatusOK, gin.H{"status": "error"})
+		return
+	}
+
+	// Determine message type
+	msgType := models.MessageTypeText
+	switch payload.MsgType {
+	case "image":
+		msgType = models.MessageTypeImage
+	case "video":
+		msgType = models.MessageTypeVideo
+	}
+
+	// Create message
+	message := &models.Message{
+		ConversationID: conv.ID,
+		SenderType:     models.SenderContact,
+		SenderID:       contact.ID,
+		MessageType:    msgType,
+		Content:        payload.Content,
+		ExternalID:     payload.MsgID,
+		Status:         models.MessageStatusDelivered,
+	}
+
+	if err := h.messageService.Create(message); err != nil {
+		fmt.Printf("[TikTok Webhook] Failed to create message: %v\n", err)
+	}
+
+	// Broadcast via WebSocket
+	if h.hub != nil {
+		h.hub.Broadcast(channel.OrganizationID, "message:new", message)
+
+		updatedConv, err := h.convService.GetByID(channel.OrganizationID, conv.ID)
+		if err == nil {
+			updatedConv.LastMessage = message
+			unreadCount, _ := h.messageService.CountUnread(conv.ID)
+			updatedConv.UnreadCount = unreadCount
+			h.hub.Broadcast(channel.OrganizationID, "conversation:update", updatedConv)
+		}
+	}
+
+	// Trigger AI auto-reply for text messages
+	if msgType == models.MessageTypeText && payload.Content != "" {
+		h.processAIMessage(channel.ID, contact.ID, conv.ID, payload.Content)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "received"})
+}
+

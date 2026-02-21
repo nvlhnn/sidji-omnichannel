@@ -155,6 +155,8 @@ func main() {
 			webhooks.GET("", webhookHandler.Verify)              // Meta GET verify
 			webhooks.POST("", webhookHandler.Handle)             // Meta POST handle
 			webhooks.POST("/meta", webhookHandler.Handle)        // Explicit meta path
+			webhooks.GET("/tiktok", webhookHandler.HandleTikTokVerify)  // TikTok GET verify
+			webhooks.POST("/tiktok", webhookHandler.HandleTikTok)       // TikTok POST handle
 		}
 
 		// Protected routes
@@ -195,6 +197,7 @@ func main() {
 				channels.POST("/instagram/connect", channelHandler.ConnectInstagram)
 				channels.POST("/whatsapp/connect", channelHandler.ConnectWhatsApp)
 				channels.POST("/facebook/connect", channelHandler.ConnectFacebook)
+				channels.POST("/tiktok/connect", channelHandler.ConnectTikTok)
 				channels.POST("/discover/meta", channelHandler.DiscoverMeta)
 				channels.DELETE("/:id", middleware.RequireRole(models.RoleAdmin), channelHandler.Delete)
 				channels.POST("/:id/activate", middleware.RequireRole(models.RoleAdmin), channelHandler.Activate)

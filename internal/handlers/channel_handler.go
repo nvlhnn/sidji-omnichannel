@@ -351,3 +351,43 @@ func (h *ChannelHandler) DiscoverMeta(c *gin.Context) {
 
 	c.JSON(http.StatusOK, accounts)
 }
+
+// ConnectTikTok godoc
+// @Summary      Connect TikTok
+// @Description  Connect a TikTok channel using OAuth authorization code
+// @Tags         channels
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        input  body      models.ConnectTikTokInput  true  "OAuth Code"
+// @Success      200    {object}  models.ChannelPublic
+// @Failure      400    {object}  map[string]string
+// @Failure      403    {object}  map[string]string
+// @Failure      500    {object}  map[string]string
+// @Router       /channels/tiktok/connect [post]
+func (h *ChannelHandler) ConnectTikTok(c *gin.Context) {
+	orgID := middleware.GetOrganizationID(c)
+
+	var input models.ConnectTikTokInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	channel, err := h.channelService.ConnectTikTok(orgID, input.Code)
+	if err != nil {
+		if err == subscription.ErrSubscriptionLimitReached {
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, models.ChannelPublic{
+		ID:     channel.ID,
+		Type:   channel.Type,
+		Name:   channel.Name,
+		Status: channel.Status,
+	})
+}

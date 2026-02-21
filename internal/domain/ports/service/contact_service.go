@@ -15,5 +15,6 @@ type ContactService interface {
 	FindOrCreateByWhatsAppID(orgID uuid.UUID, whatsAppID, name string) (*models.Contact, error)
 	FindOrCreateByInstagramID(orgID uuid.UUID, instagramID, name, avatarURL string) (*models.Contact, error)
 	FindOrCreateByFacebookID(orgID uuid.UUID, facebookID, name, avatarURL string) (*models.Contact, error)
+	FindOrCreateByTikTokID(orgID uuid.UUID, tiktokID, name, avatarURL string) (*models.Contact, error)
 	GetConversations(orgID, contactID uuid.UUID) ([]*models.Conversation, error)
 }

@@ -176,3 +176,34 @@ func (s *ContactService) FindOrCreateByFacebookID(orgID uuid.UUID, facebookID, n
 func (s *ContactService) GetConversations(orgID, contactID uuid.UUID) ([]*models.Conversation, error) {
 	return s.repo.GetConversations(orgID, contactID)
 }
+
+// FindOrCreateByTikTokID finds or creates a contact by TikTok ID
+func (s *ContactService) FindOrCreateByTikTokID(orgID uuid.UUID, tiktokID, name, avatarURL string) (*models.Contact, error) {
+	contact, err := s.repo.GetByTikTokID(orgID, tiktokID)
+	if err == nil {
+		if (name != "" && contact.Name != name) || (avatarURL != "" && contact.AvatarURL != avatarURL) {
+			s.repo.UpdateNameAndAvatar(contact.ID, name, avatarURL)
+			if name != "" { contact.Name = name }
+			if avatarURL != "" { contact.AvatarURL = avatarURL }
+		}
+		return contact, nil
+	}
+
+	if err != repository.ErrNotFound {
+		return nil, err
+	}
+
+	contact = &models.Contact{
+		ID:             uuid.New(),
+		OrganizationID: orgID,
+		Name:           name,
+		TikTokID:       tiktokID,
+		AvatarURL:      avatarURL,
+	}
+
+	if err := s.repo.Create(contact); err != nil {
+		return nil, err
+	}
+
+	return contact, nil
+}

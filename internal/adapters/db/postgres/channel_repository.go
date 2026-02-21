@@ -19,7 +19,7 @@ func NewChannelRepository(db *sql.DB) repository.ChannelRepository {
 
 func (r *channelRepository) List(orgID uuid.UUID) ([]*models.Channel, error) {
 	rows, err := r.db.Query(`
-		SELECT id, organization_id, type, provider, name, config, phone_number_id, ig_user_id, facebook_page_id, status, created_at
+		SELECT id, organization_id, type, provider, name, config, phone_number_id, ig_user_id, facebook_page_id, tiktok_open_id, status, created_at
 		FROM channels
 		WHERE organization_id = $1
 		ORDER BY created_at DESC
@@ -32,10 +32,10 @@ func (r *channelRepository) List(orgID uuid.UUID) ([]*models.Channel, error) {
 	var channelsList []*models.Channel
 	for rows.Next() {
 		channel := &models.Channel{}
-		var pnID, igID, fbID sql.NullString
+		var pnID, igID, fbID, ttID sql.NullString
 		err := rows.Scan(
 			&channel.ID, &channel.OrganizationID, &channel.Type, &channel.Provider, &channel.Name,
-			&channel.Config, &pnID, &igID, &fbID, &channel.Status, &channel.CreatedAt,
+			&channel.Config, &pnID, &igID, &fbID, &ttID, &channel.Status, &channel.CreatedAt,
 		)
 		if err != nil {
 			return nil, err
@@ -43,6 +43,7 @@ func (r *channelRepository) List(orgID uuid.UUID) ([]*models.Channel, error) {
 		if pnID.Valid { channel.PhoneNumberID = pnID.String }
 		if igID.Valid { channel.IGUserID = igID.String }
 		if fbID.Valid { channel.FacebookPageID = fbID.String }
+		if ttID.Valid { channel.TikTokOpenID = ttID.String }
 		channelsList = append(channelsList, channel)
 	}
 
@@ -51,14 +52,14 @@ func (r *channelRepository) List(orgID uuid.UUID) ([]*models.Channel, error) {
 
 func (r *channelRepository) Get(channelID uuid.UUID) (*models.Channel, error) {
 	channel := &models.Channel{}
-	var pnID, igID, fbID sql.NullString
+	var pnID, igID, fbID, ttID sql.NullString
 	err := r.db.QueryRow(`
-		SELECT id, organization_id, type, provider, name, config, access_token, phone_number_id, ig_user_id, facebook_page_id, status, created_at
+		SELECT id, organization_id, type, provider, name, config, access_token, phone_number_id, ig_user_id, facebook_page_id, tiktok_open_id, status, created_at
 		FROM channels
 		WHERE id = $1
 	`, channelID).Scan(
 		&channel.ID, &channel.OrganizationID, &channel.Type, &channel.Provider, &channel.Name,
-		&channel.Config, &channel.AccessToken, &pnID, &igID, &fbID,
+		&channel.Config, &channel.AccessToken, &pnID, &igID, &fbID, &ttID,
 		&channel.Status, &channel.CreatedAt,
 	)
 	if err == sql.ErrNoRows {
@@ -70,19 +71,20 @@ func (r *channelRepository) Get(channelID uuid.UUID) (*models.Channel, error) {
 	if pnID.Valid { channel.PhoneNumberID = pnID.String }
 	if igID.Valid { channel.IGUserID = igID.String }
 	if fbID.Valid { channel.FacebookPageID = fbID.String }
+	if ttID.Valid { channel.TikTokOpenID = ttID.String }
 	return channel, nil
 }
 
 func (r *channelRepository) GetByID(orgID, channelID uuid.UUID) (*models.Channel, error) {
 	channel := &models.Channel{}
-	var pnID, igID, fbID sql.NullString
+	var pnID, igID, fbID, ttID sql.NullString
 	err := r.db.QueryRow(`
-		SELECT id, organization_id, type, provider, name, config, access_token, phone_number_id, ig_user_id, facebook_page_id, status, created_at
+		SELECT id, organization_id, type, provider, name, config, access_token, phone_number_id, ig_user_id, facebook_page_id, tiktok_open_id, status, created_at
 		FROM channels
 		WHERE id = $1 AND organization_id = $2
 	`, channelID, orgID).Scan(
 		&channel.ID, &channel.OrganizationID, &channel.Type, &channel.Provider, &channel.Name,
-		&channel.Config, &channel.AccessToken, &pnID, &igID, &fbID,
+		&channel.Config, &channel.AccessToken, &pnID, &igID, &fbID, &ttID,
 		&channel.Status, &channel.CreatedAt,
 	)
 	if err == sql.ErrNoRows {
@@ -94,19 +96,20 @@ func (r *channelRepository) GetByID(orgID, channelID uuid.UUID) (*models.Channel
 	if pnID.Valid { channel.PhoneNumberID = pnID.String }
 	if igID.Valid { channel.IGUserID = igID.String }
 	if fbID.Valid { channel.FacebookPageID = fbID.String }
+	if ttID.Valid { channel.TikTokOpenID = ttID.String }
 	return channel, nil
 }
 
 func (r *channelRepository) GetByPhoneNumberID(phoneNumberID string) (*models.Channel, error) {
 	channel := &models.Channel{}
-	var pnID, igID, fbID sql.NullString
+	var pnID, igID, fbID, ttID sql.NullString
 	err := r.db.QueryRow(`
-		SELECT id, organization_id, type, provider, name, config, access_token, phone_number_id, ig_user_id, facebook_page_id, status
+		SELECT id, organization_id, type, provider, name, config, access_token, phone_number_id, ig_user_id, facebook_page_id, tiktok_open_id, status
 		FROM channels
 		WHERE phone_number_id = $1 AND status = 'active'
 	`, phoneNumberID).Scan(
 		&channel.ID, &channel.OrganizationID, &channel.Type, &channel.Provider, &channel.Name,
-		&channel.Config, &channel.AccessToken, &pnID, &igID, &fbID, &channel.Status,
+		&channel.Config, &channel.AccessToken, &pnID, &igID, &fbID, &ttID, &channel.Status,
 	)
 	if err == sql.ErrNoRows {
 		return nil, repository.ErrNotFound
@@ -117,19 +120,20 @@ func (r *channelRepository) GetByPhoneNumberID(phoneNumberID string) (*models.Ch
 	if pnID.Valid { channel.PhoneNumberID = pnID.String }
 	if igID.Valid { channel.IGUserID = igID.String }
 	if fbID.Valid { channel.FacebookPageID = fbID.String }
+	if ttID.Valid { channel.TikTokOpenID = ttID.String }
 	return channel, nil
 }
 
 func (r *channelRepository) GetByIGUserID(igUserID string) (*models.Channel, error) {
 	channel := &models.Channel{}
-	var pnID, igID, fbID sql.NullString
+	var pnID, igID, fbID, ttID sql.NullString
 	err := r.db.QueryRow(`
-		SELECT id, organization_id, type, provider, name, config, access_token, phone_number_id, ig_user_id, facebook_page_id, status
+		SELECT id, organization_id, type, provider, name, config, access_token, phone_number_id, ig_user_id, facebook_page_id, tiktok_open_id, status
 		FROM channels
 		WHERE ig_user_id = $1 AND status = 'active'
 	`, igUserID).Scan(
 		&channel.ID, &channel.OrganizationID, &channel.Type, &channel.Provider, &channel.Name,
-		&channel.Config, &channel.AccessToken, &pnID, &igID, &fbID, &channel.Status,
+		&channel.Config, &channel.AccessToken, &pnID, &igID, &fbID, &ttID, &channel.Status,
 	)
 	if err == sql.ErrNoRows {
 		return nil, repository.ErrNotFound
@@ -140,19 +144,20 @@ func (r *channelRepository) GetByIGUserID(igUserID string) (*models.Channel, err
 	if pnID.Valid { channel.PhoneNumberID = pnID.String }
 	if igID.Valid { channel.IGUserID = igID.String }
 	if fbID.Valid { channel.FacebookPageID = fbID.String }
+	if ttID.Valid { channel.TikTokOpenID = ttID.String }
 	return channel, nil
 }
 
 func (r *channelRepository) GetByFacebookPageID(pageID string) (*models.Channel, error) {
 	channel := &models.Channel{}
-	var pnID, igID, fbID sql.NullString
+	var pnID, igID, fbID, ttID sql.NullString
 	err := r.db.QueryRow(`
-		SELECT id, organization_id, type, provider, name, config, access_token, phone_number_id, ig_user_id, facebook_page_id, status
+		SELECT id, organization_id, type, provider, name, config, access_token, phone_number_id, ig_user_id, facebook_page_id, tiktok_open_id, status
 		FROM channels
 		WHERE facebook_page_id = $1 AND status = 'active'
 	`, pageID).Scan(
 		&channel.ID, &channel.OrganizationID, &channel.Type, &channel.Provider, &channel.Name,
-		&channel.Config, &channel.AccessToken, &pnID, &igID, &fbID, &channel.Status,
+		&channel.Config, &channel.AccessToken, &pnID, &igID, &fbID, &ttID, &channel.Status,
 	)
 	if err == sql.ErrNoRows {
 		return nil, repository.ErrNotFound
@@ -163,15 +168,40 @@ func (r *channelRepository) GetByFacebookPageID(pageID string) (*models.Channel,
 	if pnID.Valid { channel.PhoneNumberID = pnID.String }
 	if igID.Valid { channel.IGUserID = igID.String }
 	if fbID.Valid { channel.FacebookPageID = fbID.String }
+	if ttID.Valid { channel.TikTokOpenID = ttID.String }
+	return channel, nil
+}
+
+func (r *channelRepository) GetByTikTokOpenID(tiktokOpenID string) (*models.Channel, error) {
+	channel := &models.Channel{}
+	var pnID, igID, fbID, ttID sql.NullString
+	err := r.db.QueryRow(`
+		SELECT id, organization_id, type, provider, name, config, access_token, phone_number_id, ig_user_id, facebook_page_id, tiktok_open_id, status
+		FROM channels
+		WHERE tiktok_open_id = $1 AND status = 'active'
+	`, tiktokOpenID).Scan(
+		&channel.ID, &channel.OrganizationID, &channel.Type, &channel.Provider, &channel.Name,
+		&channel.Config, &channel.AccessToken, &pnID, &igID, &fbID, &ttID, &channel.Status,
+	)
+	if err == sql.ErrNoRows {
+		return nil, repository.ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	if pnID.Valid { channel.PhoneNumberID = pnID.String }
+	if igID.Valid { channel.IGUserID = igID.String }
+	if fbID.Valid { channel.FacebookPageID = fbID.String }
+	if ttID.Valid { channel.TikTokOpenID = ttID.String }
 	return channel, nil
 }
 
 func (r *channelRepository) Create(channel *models.Channel) error {
 	_, err := r.db.Exec(`
-		INSERT INTO channels (id, organization_id, type, provider, name, config, access_token, phone_number_id, ig_user_id, facebook_page_id, status)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		INSERT INTO channels (id, organization_id, type, provider, name, config, access_token, phone_number_id, ig_user_id, facebook_page_id, tiktok_open_id, status)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 	`, channel.ID, channel.OrganizationID, channel.Type, channel.Provider, channel.Name, channel.Config,
-		channel.AccessToken, channel.PhoneNumberID, channel.IGUserID, channel.FacebookPageID, channel.Status)
+		channel.AccessToken, channel.PhoneNumberID, channel.IGUserID, channel.FacebookPageID, channel.TikTokOpenID, channel.Status)
 	return err
 }
 

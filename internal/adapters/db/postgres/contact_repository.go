@@ -21,7 +21,7 @@ func NewContactRepository(db *sql.DB) repository.ContactRepository {
 func (r *contactRepository) List(orgID uuid.UUID, page, limit int, search string) ([]*models.Contact, int, error) {
 	offset := (page - 1) * limit
 	query := `
-		SELECT id, organization_id, name, phone, email, avatar_url, whatsapp_id, instagram_id, facebook_id, created_at
+		SELECT id, organization_id, name, phone, email, avatar_url, whatsapp_id, instagram_id, facebook_id, tiktok_id, created_at
 		FROM contacts
 		WHERE organization_id = $1
 	`
@@ -52,10 +52,10 @@ func (r *contactRepository) List(orgID uuid.UUID, page, limit int, search string
 	var contacts []*models.Contact
 	for rows.Next() {
 		contact := &models.Contact{}
-		var phone, email, avatarURL, whatsappID, instagramID, facebookID sql.NullString
+		var phone, email, avatarURL, whatsappID, instagramID, facebookID, tiktokID sql.NullString
 		err := rows.Scan(
 			&contact.ID, &contact.OrganizationID, &contact.Name, &phone,
-			&email, &avatarURL, &whatsappID, &instagramID, &facebookID, &contact.CreatedAt,
+			&email, &avatarURL, &whatsappID, &instagramID, &facebookID, &tiktokID, &contact.CreatedAt,
 		)
 		if err != nil {
 			return nil, 0, err
@@ -66,6 +66,7 @@ func (r *contactRepository) List(orgID uuid.UUID, page, limit int, search string
 		if whatsappID.Valid { contact.WhatsAppID = whatsappID.String }
 		if instagramID.Valid { contact.InstagramID = instagramID.String }
 		if facebookID.Valid { contact.FacebookID = facebookID.String }
+		if tiktokID.Valid { contact.TikTokID = tiktokID.String }
 		contacts = append(contacts, contact)
 	}
 	return contacts, total, nil
@@ -73,15 +74,15 @@ func (r *contactRepository) List(orgID uuid.UUID, page, limit int, search string
 
 func (r *contactRepository) GetByID(orgID, contactID uuid.UUID) (*models.Contact, error) {
 	contact := &models.Contact{}
-	var phone, email, avatarURL, whatsappID, instagramID, facebookID sql.NullString
+	var phone, email, avatarURL, whatsappID, instagramID, facebookID, tiktokID sql.NullString
 	var metadata []byte
 	err := r.db.QueryRow(`
-		SELECT id, organization_id, name, phone, email, avatar_url, metadata, whatsapp_id, instagram_id, facebook_id, created_at, updated_at
+		SELECT id, organization_id, name, phone, email, avatar_url, metadata, whatsapp_id, instagram_id, facebook_id, tiktok_id, created_at, updated_at
 		FROM contacts
 		WHERE id = $1 AND organization_id = $2
 	`, contactID, orgID).Scan(
 		&contact.ID, &contact.OrganizationID, &contact.Name, &phone,
-		&email, &avatarURL, &metadata, &whatsappID, &instagramID, &facebookID,
+		&email, &avatarURL, &metadata, &whatsappID, &instagramID, &facebookID, &tiktokID,
 		&contact.CreatedAt, &contact.UpdatedAt,
 	)
 	if err == sql.ErrNoRows {
@@ -99,6 +100,7 @@ func (r *contactRepository) GetByID(orgID, contactID uuid.UUID) (*models.Contact
 	if whatsappID.Valid { contact.WhatsAppID = whatsappID.String }
 	if instagramID.Valid { contact.InstagramID = instagramID.String }
 	if facebookID.Valid { contact.FacebookID = facebookID.String }
+	if tiktokID.Valid { contact.TikTokID = tiktokID.String }
 	return contact, nil
 }
 
@@ -178,12 +180,39 @@ func (r *contactRepository) GetByFacebookID(orgID uuid.UUID, facebookID string) 
 	return contact, nil
 }
 
+func (r *contactRepository) GetByTikTokID(orgID uuid.UUID, tiktokID string) (*models.Contact, error) {
+	contact := &models.Contact{}
+	var phone, email, avatarURL, whatsappID, instagramID, facebookID, tiktokIDNS sql.NullString
+	err := r.db.QueryRow(`
+		SELECT id, organization_id, name, phone, email, avatar_url, whatsapp_id, instagram_id, facebook_id, tiktok_id, created_at
+		FROM contacts
+		WHERE organization_id = $1 AND tiktok_id = $2
+	`, orgID, tiktokID).Scan(
+		&contact.ID, &contact.OrganizationID, &contact.Name, &phone,
+		&email, &avatarURL, &whatsappID, &instagramID, &facebookID, &tiktokIDNS, &contact.CreatedAt,
+	)
+	if err == sql.ErrNoRows {
+		return nil, repository.ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	if phone.Valid { contact.Phone = phone.String }
+	if email.Valid { contact.Email = email.String }
+	if avatarURL.Valid { contact.AvatarURL = avatarURL.String }
+	if whatsappID.Valid { contact.WhatsAppID = whatsappID.String }
+	if instagramID.Valid { contact.InstagramID = instagramID.String }
+	if facebookID.Valid { contact.FacebookID = facebookID.String }
+	if tiktokIDNS.Valid { contact.TikTokID = tiktokIDNS.String }
+	return contact, nil
+}
+
 func (r *contactRepository) Create(contact *models.Contact) error {
 	_, err := r.db.Exec(`
-		INSERT INTO contacts (id, organization_id, name, phone, email, avatar_url, whatsapp_id, instagram_id, facebook_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		INSERT INTO contacts (id, organization_id, name, phone, email, avatar_url, whatsapp_id, instagram_id, facebook_id, tiktok_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 	`, contact.ID, contact.OrganizationID, contact.Name, contact.Phone, contact.Email, contact.AvatarURL,
-		contact.WhatsAppID, contact.InstagramID, contact.FacebookID)
+		contact.WhatsAppID, contact.InstagramID, contact.FacebookID, contact.TikTokID)
 	return err
 }
 

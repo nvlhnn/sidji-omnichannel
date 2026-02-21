@@ -12,6 +12,7 @@ type Config struct {
 	Database DatabaseConfig
 	Redis    RedisConfig
 	Meta     MetaConfig
+	TikTok   TikTokConfig
 	AWS      AWSConfig
 	AI       AIConfig
 }
@@ -59,6 +60,12 @@ type AIConfig struct {
 	Provider     string // "gemini" or "openai"
 }
 
+type TikTokConfig struct {
+	ClientKey    string
+	ClientSecret string
+	RedirectURI  string
+}
+
 func Load() (*Config, error) {
 	// Load .env file if exists
 	godotenv.Load()
@@ -88,6 +95,11 @@ func Load() (*Config, error) {
 			AppID:                     getEnv("META_APP_ID", ""),
 			AppSecret:                 getEnv("META_APP_SECRET", ""),
 			VerifyToken:               getEnv("META_VERIFY_TOKEN", ""),
+		},
+		TikTok: TikTokConfig{
+			ClientKey:    getEnv("TIKTOK_CLIENT_KEY", ""),
+			ClientSecret: getEnv("TIKTOK_CLIENT_SECRET", ""),
+			RedirectURI:  getEnv("TIKTOK_REDIRECT_URI", ""),
 		},
 		AWS: AWSConfig{
 			Region:          getEnv("AWS_REGION", "ap-southeast-1"),

@@ -13,6 +13,7 @@ type ChannelRepository interface {
 	GetByPhoneNumberID(phoneNumberID string) (*models.Channel, error)
 	GetByIGUserID(igUserID string) (*models.Channel, error)
 	GetByFacebookPageID(pageID string) (*models.Channel, error)
+	GetByTikTokOpenID(tiktokOpenID string) (*models.Channel, error)
 	Create(channel *models.Channel) error
 	Update(channel *models.Channel) error
 	UpdateStatus(channelID uuid.UUID, status models.ChannelStatus) error

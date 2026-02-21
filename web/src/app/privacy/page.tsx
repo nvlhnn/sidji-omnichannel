@@ -3,7 +3,7 @@
 import Link from 'next/link';
 
 export default function PrivacyPolicyPage() {
-  const lastUpdated = "February 10, 2026";
+  const lastUpdated = "February 21, 2026";
 
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)] py-12 px-4 sm:px-6 lg:px-8">
@@ -40,7 +40,7 @@ export default function PrivacyPolicyPage() {
                 Welcome to Sidji-Omnichannel. We respect your privacy and are committed to protecting your personal data. This privacy policy will inform you as to how we look after your personal data when you visit our website or use our omnichannel messaging platform.
               </p>
               <p>
-                Sidji-Omnichannel provides a unified inbox for business communication, integrating services like WhatsApp, Instagram, and Facebook. In providing these services, we process data on behalf of our business customers.
+              Sidji-Omnichannel provides a unified inbox for business communication, integrating services like WhatsApp, Instagram, Facebook, and TikTok. In providing these services, we process data on behalf of our business customers.
               </p>
             </div>
           </section>
@@ -57,7 +57,8 @@ export default function PrivacyPolicyPage() {
                 <li><strong>Contact Data:</strong> Includes billing address, email address and telephone numbers.</li>
                 <li><strong>Technical Data:</strong> Includes internet protocol (IP) address, login data, browser type and version, time zone setting and location.</li>
                 <li><strong>Usage Data:</strong> Includes information about how you use our website, products and services.</li>
-                <li><strong>Communication Data:</strong> Includes the content of messages sent through the platform between business agents and their customers.</li>
+                <li><strong>Communication Data:</strong> Includes the content of messages sent through the platform between business agents and their customers via WhatsApp, Instagram, Facebook, and TikTok.</li>
+                <li><strong>Third-Party Profile Data:</strong> Includes display names, usernames, and profile pictures from connected social media accounts (Meta, TikTok) used solely for contact identification.</li>
               </ul>
             </div>
           </section>
@@ -69,7 +70,7 @@ export default function PrivacyPolicyPage() {
             </h2>
             <div className="prose prose-invert max-w-none text-[var(--foreground-secondary)] leading-relaxed space-y-4">
               <p>
-                Our platform integrates with Meta Platforms, Inc. (WhatsApp, Instagram, Facebook). By using these channels, you are also subject to their respective privacy policies:
+                Our platform integrates with Meta Platforms, Inc. (WhatsApp, Instagram, Facebook) and ByteDance Ltd. (TikTok). By using these channels, you are also subject to their respective privacy policies:
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
                 <a href="https://www.whatsapp.com/legal/privacy-policy" target="_blank" className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors flex items-center gap-3">
@@ -90,6 +91,26 @@ export default function PrivacyPolicyPage() {
                     <p className="text-xs text-[var(--foreground-muted)]">View Policy</p>
                   </div>
                 </a>
+                <a href="https://www.tiktok.com/legal/privacy-policy" target="_blank" className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[#00f2ea]/20 flex items-center justify-center">
+                    <svg className="w-6 h-6 text-[#00f2ea]" fill="currentColor" viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 00-.79-.05A6.34 6.34 0 003.15 15.2a6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.34-6.34V9.28a8.28 8.28 0 004.77 1.51V7.34a4.85 4.85 0 01-1.01-.65z"/></svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold">TikTok Privacy</p>
+                    <p className="text-xs text-[var(--foreground-muted)]">View Policy</p>
+                  </div>
+                </a>
+              </div>
+
+              <div className="mt-6 p-4 rounded-2xl bg-white/5 border border-white/10">
+                <h3 className="font-bold mb-2">TikTok Data Usage</h3>
+                <p className="text-sm text-[var(--foreground-muted)] leading-relaxed">When you connect your TikTok account, we access the following data through TikTok&apos;s API:</p>
+                <ul className="list-disc pl-6 space-y-1 mt-2 text-sm text-[var(--foreground-muted)]">
+                  <li><strong>User Profile:</strong> Display name, username, and avatar URL — used to identify the connected channel.</li>
+                  <li><strong>Direct Messages:</strong> Message content received via TikTok DMs — displayed in your unified inbox for customer support purposes only.</li>
+                  <li><strong>Open ID:</strong> A unique user identifier — used to route messages to the correct business account.</li>
+                </ul>
+                <p className="text-sm text-[var(--foreground-muted)] mt-2">We do not store, share, or sell TikTok user data beyond what is necessary for providing customer support functionality. Access tokens are stored securely and are never exposed publicly.</p>
               </div>
             </div>
           </section>
@@ -146,6 +167,7 @@ export default function PrivacyPolicyPage() {
           <p>&copy; {new Date().getFullYear()} Sidji-Omnichannel. All rights reserved.</p>
           <div className="mt-4 flex justify-center gap-6">
             <Link href="/" className="hover:text-[var(--foreground)] transition-colors">Home</Link>
+            <Link href="/terms" className="hover:text-[var(--foreground)] transition-colors">Terms of Service</Link>
             <Link href="/login" className="hover:text-[var(--foreground)] transition-colors">Login</Link>
             <Link href="/register" className="hover:text-[var(--foreground)] transition-colors">Get Started</Link>
           </div>
