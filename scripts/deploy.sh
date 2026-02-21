@@ -69,7 +69,7 @@ fi
 
 # Step 1: Pull latest code from GitHub
 echo -e "${YELLOW}📥 Step 1/6: Pulling latest code from GitHub...${NC}"
-git pull origin hexagonal
+git pull origin main
 echo -e "${GREEN}  ✅ Code updated${NC}"
 
 # Step 2: Pull latest base images
