@@ -8,6 +8,5 @@ INSERT INTO schema_migrations (version) VALUES
 ('007_add_provider_to_channels'),
 ('008_add_message_usage_fields'),
 ('009_add_facebook_channel'),
-('010_add_sender_note'),
-('011_standardize_embedding_dim')
+('010_add_sender_note')
 ON CONFLICT DO NOTHING;
