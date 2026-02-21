@@ -207,9 +207,9 @@ func (r *channelRepository) Delete(orgID, channelID uuid.UUID) error {
 
 func (r *channelRepository) ListActiveMeta() ([]*models.Channel, error) {
 	rows, err := r.db.Query(`
-		SELECT id, name, type, access_token 
+		SELECT id, name, type, access_token, status
 		FROM channels 
-		WHERE status = 'active' AND type IN ('instagram', 'whatsapp')
+		WHERE status = 'active' AND type IN ('instagram', 'whatsapp', 'facebook')
 	`)
 	if err != nil {
 		return nil, err
@@ -219,7 +219,7 @@ func (r *channelRepository) ListActiveMeta() ([]*models.Channel, error) {
 	var channels []*models.Channel
 	for rows.Next() {
 		ch := &models.Channel{}
-		if err := rows.Scan(&ch.ID, &ch.Name, &ch.Type, &ch.AccessToken); err != nil {
+		if err := rows.Scan(&ch.ID, &ch.Name, &ch.Type, &ch.AccessToken, &ch.Status); err != nil {
 			return nil, err
 		}
 		channels = append(channels, ch)
