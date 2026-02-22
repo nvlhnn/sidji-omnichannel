@@ -194,7 +194,7 @@ export function AddChannelModal({ onClose, onSuccess, initialType = 'whatsapp' }
                 <span className="w-6 h-6 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center text-[10px] font-bold">1</span>
                 <label className="text-sm font-semibold uppercase tracking-wider text-[var(--foreground-secondary)]">Select Platform</label>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 {[
                   { id: 'whatsapp', label: 'WhatsApp', icon: MessageCircle, color: 'whatsapp', brand: '#25D366' },
                   { id: 'instagram', label: 'Instagram', icon: Instagram, color: 'instagram', brand: '#E1306C' },
@@ -291,7 +291,7 @@ export function AddChannelModal({ onClose, onSuccess, initialType = 'whatsapp' }
                             const clientKey = process.env.NEXT_PUBLIC_TIKTOK_CLIENT_KEY || 'YOUR_CLIENT_KEY';
                             const redirectUri = typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}/auth/tiktok/callback` : '';
                             const state = Math.random().toString(36).substring(7);
-                            const url = `https://www.tiktok.com/v2/auth/authorize/?client_key=${clientKey}&response_type=code&scope=user.info.basic,video.list,video.publish&redirect_uri=${redirectUri}&state=${state}`;
+                            const url = `https://www.tiktok.com/v2/auth/authorize/?client_key=${clientKey}&response_type=code&scope=user.info.basic,video.list,video.publish&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`;
                             
                             if (clientKey === 'YOUR_CLIENT_KEY') {
                               alert("TikTok Fast Connect requires NEXT_PUBLIC_TIKTOK_CLIENT_KEY in your deployment environment variables.");
