@@ -586,9 +586,9 @@ func (s *ChannelService) ConnectTikTok(orgID uuid.UUID, code string) (*models.Ch
 		return nil, fmt.Errorf("failed to exchange TikTok code: %w", err)
 	}
 
-	openID := tokenResp.Data.OpenID
-	accessToken := tokenResp.Data.AccessToken
-	refreshToken := tokenResp.Data.RefreshToken
+	openID := tokenResp.GetOpenID()
+	accessToken := tokenResp.GetAccessToken()
+	refreshToken := tokenResp.GetRefreshToken()
 
 	if openID == "" {
 		return nil, errors.New("tiktok oauth returned empty open_id")

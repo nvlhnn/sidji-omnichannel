@@ -33,7 +33,18 @@ func NewTikTokClient(cfg *config.TikTokConfig) *TikTokClient {
 // === OAuth ===
 
 // TokenResponse represents the OAuth token exchange response
+// TikTok v2 returns fields at top level, NOT nested inside "data"
 type TokenResponse struct {
+	// Top-level fields (TikTok v2 format)
+	AccessToken      string `json:"access_token"`
+	RefreshToken     string `json:"refresh_token"`
+	OpenID           string `json:"open_id"`
+	ExpiresIn        int    `json:"expires_in"`
+	RefreshExpiresIn int    `json:"refresh_expires_in"`
+	Scope            string `json:"scope"`
+	TokenType        string `json:"token_type"`
+
+	// Nested data (some TikTok docs show this format)
 	Data struct {
 		AccessToken      string `json:"access_token"`
 		RefreshToken     string `json:"refresh_token"`
@@ -43,10 +54,34 @@ type TokenResponse struct {
 		Scope            string `json:"scope"`
 		TokenType        string `json:"token_type"`
 	} `json:"data"`
-	Error struct {
-		Code    string `json:"code"`
-		Message string `json:"message"`
-	} `json:"error"`
+
+	Error            string `json:"error"`
+	ErrorDescription string `json:"error_description"`
+	LogID            string `json:"log_id"`
+}
+
+// GetAccessToken returns the access token from whichever level it was returned
+func (t *TokenResponse) GetAccessToken() string {
+	if t.AccessToken != "" {
+		return t.AccessToken
+	}
+	return t.Data.AccessToken
+}
+
+// GetRefreshToken returns the refresh token from whichever level it was returned
+func (t *TokenResponse) GetRefreshToken() string {
+	if t.RefreshToken != "" {
+		return t.RefreshToken
+	}
+	return t.Data.RefreshToken
+}
+
+// GetOpenID returns the open_id from whichever level it was returned
+func (t *TokenResponse) GetOpenID() string {
+	if t.OpenID != "" {
+		return t.OpenID
+	}
+	return t.Data.OpenID
 }
 
 // ExchangeCodeForToken exchanges an authorization code for an access token
@@ -58,20 +93,32 @@ func (c *TikTokClient) ExchangeCodeForToken(code string) (*TokenResponse, error)
 	data.Set("grant_type", "authorization_code")
 	data.Set("redirect_uri", c.cfg.RedirectURI)
 
+	fmt.Printf("[TikTok] Exchanging code, redirect_uri=%s\n", c.cfg.RedirectURI)
+
 	resp, err := c.httpClient.PostForm(tiktokAuthBase+"/token/", data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to exchange code: %w", err)
 	}
 	defer resp.Body.Close()
 
-	var tokenResp TokenResponse
-	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
-		return nil, fmt.Errorf("failed to decode token response: %w", err)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read token response body: %w", err)
 	}
 
-	if tokenResp.Error.Code != "" {
-		return nil, fmt.Errorf("tiktok oauth error: %s - %s", tokenResp.Error.Code, tokenResp.Error.Message)
+	fmt.Printf("[TikTok] Token response (status %d): %s\n", resp.StatusCode, string(body))
+
+	var tokenResp TokenResponse
+	if err := json.Unmarshal(body, &tokenResp); err != nil {
+		return nil, fmt.Errorf("failed to decode token response: %w (body: %s)", err, string(body))
 	}
+
+	if tokenResp.Error != "" {
+		return nil, fmt.Errorf("tiktok oauth error: %s - %s", tokenResp.Error, tokenResp.ErrorDescription)
+	}
+
+	fmt.Printf("[TikTok] Parsed token: open_id=%q, top-level access_token_len=%d, data.open_id=%q, data.access_token_len=%d\n",
+		tokenResp.OpenID, len(tokenResp.AccessToken), tokenResp.Data.OpenID, len(tokenResp.Data.AccessToken))
 
 	return &tokenResp, nil
 }
@@ -90,13 +137,18 @@ func (c *TikTokClient) RefreshAccessToken(refreshToken string) (*TokenResponse, 
 	}
 	defer resp.Body.Close()
 
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read refresh response: %w", err)
+	}
+
 	var tokenResp TokenResponse
-	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
+	if err := json.Unmarshal(body, &tokenResp); err != nil {
 		return nil, fmt.Errorf("failed to decode token response: %w", err)
 	}
 
-	if tokenResp.Error.Code != "" {
-		return nil, fmt.Errorf("tiktok refresh error: %s - %s", tokenResp.Error.Code, tokenResp.Error.Message)
+	if tokenResp.Error != "" {
+		return nil, fmt.Errorf("tiktok refresh error: %s - %s", tokenResp.Error, tokenResp.ErrorDescription)
 	}
 
 	return &tokenResp, nil
