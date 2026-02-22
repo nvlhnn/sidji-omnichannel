@@ -302,6 +302,13 @@ class ApiClient {
         });
     }
 
+    async connectTikTok(code: string): Promise<any> {
+        return this.request<any>('/channels/tiktok/connect', {
+            method: 'POST',
+            body: JSON.stringify({ code }),
+        });
+    }
+
     async discoverMeta(accessToken: string): Promise<{
         facebook_pages: { id: string, name: string }[],
         instagram_users: { id: string, name: string, parent_id: string }[],
