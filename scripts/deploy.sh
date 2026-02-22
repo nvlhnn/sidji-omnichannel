@@ -86,8 +86,8 @@ else
 fi
 
 # Step 4: Stop existing containers (graceful)
-echo -e "${YELLOW}⏳ Step 4/6: Gracefully stopping existing containers...${NC}"
-docker compose -f $COMPOSE_FILE down --timeout 30
+# We SKIP 'docker compose down' here to allow docker compose up to gracefully recreate containers.
+# This reduces downtime from ~1 minute to ~5 seconds.
 
 # Step 5: Seed schema_migrations if needed (first-time setup for auto-migrator)
 echo -e "${YELLOW}📊 Step 5/6: Checking migration tracking...${NC}"
@@ -109,7 +109,13 @@ docker compose -f $COMPOSE_FILE up -d
 # Wait and check health
 echo ""
 echo -e "${YELLOW}⏳ Waiting for services to be healthy...${NC}"
-sleep 15
+sleep 5
+
+# Step 7: Clean up old Docker images to save disk space
+echo ""
+echo -e "${YELLOW}🧹 Step 7: Cleaning up old unused Docker images...${NC}"
+docker image prune -f
+echo -e "${GREEN}  ✅ Cleanup complete${NC}"
 
 # Check service status
 echo ""
