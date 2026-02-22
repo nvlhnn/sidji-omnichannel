@@ -270,35 +270,79 @@ export function AddChannelModal({ onClose, onSuccess, initialType = 'whatsapp' }
               {mode === 'fast' ? (
                 <div className="animate-fadeIn space-y-4">
                   {step === 'init' ? (
-                    <div className="bg-gradient-to-br from-blue-500/5 to-purple-500/5 border border-blue-500/10 rounded-2xl p-5 space-y-4">
-                      <div className="flex gap-4">
-                        <div className="w-10 h-10 rounded-lg bg-blue-500/20 text-blue-500 flex items-center justify-center flex-shrink-0">
-                          <Info size={20} />
+                    type === 'tiktok' ? (
+                      <div className="bg-gradient-to-br from-gray-900/5 to-black/5 dark:from-gray-100/5 dark:to-white/5 border border-black/10 dark:border-white/10 rounded-2xl p-5 space-y-4">
+                        <div className="flex gap-4">
+                          <div className="w-10 h-10 rounded-lg bg-black/10 dark:bg-white/10 text-black dark:text-white flex items-center justify-center flex-shrink-0">
+                            <Music size={20} />
+                          </div>
+                          <div className="space-y-1">
+                            <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100">TikTok OAuth Login</h4>
+                            <p className="text-xs text-[var(--foreground-muted)] leading-relaxed">
+                              Sign in with your TikTok account to automatically authorize sidji to manage your direct messages.
+                            </p>
+                          </div>
                         </div>
-                        <div className="space-y-1">
-                          <h4 className="text-sm font-bold text-blue-400">Meta Embedded Signup</h4>
-                          <p className="text-xs text-[var(--foreground-muted)] leading-relaxed">
-                            The official way to connect your {type === 'whatsapp' ? 'WhatsApp Business' : type === 'facebook' ? 'Facebook Page' : 'Instagram Professional'} account. Secure, fast, and no technical skills required.
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <button
-                        type="button"
-                        onClick={() => handleMetaLogin()}
-                        disabled={isSubmitting}
-                        className="group w-full py-4 bg-[#1877F2] hover:bg-[#166fe5] text-white rounded-xl font-bold flex items-center justify-center gap-3 transition-all duration-300 hover:shadow-lg hover:shadow-[#1877F2]/20 disabled:opacity-50"
-                      >
-                        <Facebook size={20} fill="currentColor" />
-                        <span>{isSubmitting ? 'Discovering...' : `Connect with Facebook`}</span>
-                        {!isSubmitting && <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />}
-                      </button>
+                        
+                        <button
+                          type="button"
+                          onClick={() => {
+                            // TikTok URL format per official documentation
+                            const clientKey = process.env.NEXT_PUBLIC_TIKTOK_CLIENT_KEY || 'YOUR_CLIENT_KEY';
+                            const redirectUri = typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}/auth/tiktok/callback` : '';
+                            const state = Math.random().toString(36).substring(7);
+                            const url = `https://www.tiktok.com/v2/auth/authorize/?client_key=${clientKey}&response_type=code&scope=user.info.basic,video.list,video.publish&redirect_uri=${redirectUri}&state=${state}`;
+                            
+                            if (clientKey === 'YOUR_CLIENT_KEY') {
+                              alert("TikTok Fast Connect requires NEXT_PUBLIC_TIKTOK_CLIENT_KEY in your deployment environment variables.");
+                            } else {
+                              window.location.href = url;
+                            }
+                          }}
+                          disabled={isSubmitting}
+                          className="group w-full py-4 bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-black rounded-xl font-bold flex items-center justify-center gap-3 transition-all duration-300 hover:shadow-lg disabled:opacity-50"
+                        >
+                          <Music size={20} className="fill-current" />
+                          <span>Connect with TikTok</span>
+                          {!isSubmitting && <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />}
+                        </button>
 
-                      <div className="flex items-center justify-center gap-4 text-[10px] text-[var(--foreground-muted)] font-medium">
-                        <div className="flex items-center gap-1"><Lock size={12} /> Encrypted</div>
-                        <div className="flex items-center gap-1"><CheckCircle2 size={12} /> Official Web API</div>
+                        <div className="flex items-center justify-center gap-4 text-[10px] text-[var(--foreground-muted)] font-medium">
+                          <div className="flex items-center gap-1"><Lock size={12} /> Secure Login Flow</div>
+                          <div className="flex items-center gap-1"><CheckCircle2 size={12} /> Official API Partner</div>
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="bg-gradient-to-br from-blue-500/5 to-purple-500/5 border border-blue-500/10 rounded-2xl p-5 space-y-4">
+                        <div className="flex gap-4">
+                          <div className="w-10 h-10 rounded-lg bg-blue-500/20 text-blue-500 flex items-center justify-center flex-shrink-0">
+                            <Info size={20} />
+                          </div>
+                          <div className="space-y-1">
+                            <h4 className="text-sm font-bold text-blue-400">Meta Embedded Signup</h4>
+                            <p className="text-xs text-[var(--foreground-muted)] leading-relaxed">
+                              The official way to connect your {type === 'whatsapp' ? 'WhatsApp Business' : type === 'facebook' ? 'Facebook Page' : 'Instagram Professional'} account. Secure, fast, and no technical skills required.
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <button
+                          type="button"
+                          onClick={() => handleMetaLogin()}
+                          disabled={isSubmitting}
+                          className="group w-full py-4 bg-[#1877F2] hover:bg-[#166fe5] text-white rounded-xl font-bold flex items-center justify-center gap-3 transition-all duration-300 hover:shadow-lg hover:shadow-[#1877F2]/20 disabled:opacity-50"
+                        >
+                          <Facebook size={20} fill="currentColor" />
+                          <span>{isSubmitting ? 'Discovering...' : `Connect with Facebook`}</span>
+                          {!isSubmitting && <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />}
+                        </button>
+
+                        <div className="flex items-center justify-center gap-4 text-[10px] text-[var(--foreground-muted)] font-medium">
+                          <div className="flex items-center gap-1"><Lock size={12} /> Encrypted</div>
+                          <div className="flex items-center gap-1"><CheckCircle2 size={12} /> Official Web API</div>
+                        </div>
+                      </div>
+                    )
                   ) : (
                     <div className="space-y-4">
                       <div className="bg-[var(--background-secondary)] border border-[var(--border)] rounded-2xl p-5 space-y-4">
