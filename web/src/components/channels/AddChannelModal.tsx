@@ -291,7 +291,7 @@ export function AddChannelModal({ onClose, onSuccess, initialType = 'whatsapp' }
                             const clientKey = process.env.NEXT_PUBLIC_TIKTOK_CLIENT_KEY || 'YOUR_CLIENT_KEY';
                             const redirectUri = typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}/auth/tiktok/callback` : '';
                             const state = Math.random().toString(36).substring(7);
-                            const url = `https://www.tiktok.com/v2/auth/authorize/?client_key=${clientKey}&response_type=code&scope=user.info.basic,video.list,video.publish&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`;
+                            const url = `https://www.tiktok.com/v2/auth/authorize/?client_key=${clientKey}&response_type=code&scope=user.info.basic&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`;
                             
                             if (clientKey === 'YOUR_CLIENT_KEY') {
                               alert("TikTok Fast Connect requires NEXT_PUBLIC_TIKTOK_CLIENT_KEY in your deployment environment variables.");
