@@ -32,7 +32,7 @@ export interface AuthResponse {
 }
 
 // Channel Types
-export type ChannelType = 'whatsapp' | 'instagram' | 'facebook';
+export type ChannelType = 'whatsapp' | 'instagram' | 'facebook' | 'tiktok';
 
 export interface Channel {
     id: string;
@@ -53,6 +53,7 @@ export interface Contact {
     whatsapp_id?: string;
     instagram_id?: string;
     facebook_id?: string;
+    tiktok_id?: string;
     tags?: string[];
     created_at: string;
     updated_at: string;

@@ -1,7 +1,7 @@
 'use client';
 
 import { ChannelType } from '@/lib/types';
-import { Instagram, Facebook, MessageCircle } from 'lucide-react';
+import { Instagram, Facebook, MessageCircle, Music } from 'lucide-react';
 
 interface ChannelBadgeProps {
   type: ChannelType;
@@ -15,12 +15,13 @@ export function ChannelBadge({ type, size = 'sm' }: ChannelBadgeProps) {
     md: 'w-8 h-8 p-2 rounded-2xl',
   };
 
-  const Icon = type === 'whatsapp' ? MessageCircle : type === 'instagram' ? Instagram : Facebook;
+  const Icon = type === 'whatsapp' ? MessageCircle : type === 'instagram' ? Instagram : type === 'tiktok' ? Music : Facebook;
 
   const bgClasses = {
     whatsapp: 'bg-[#25D366] shadow-[0_0_10px_rgba(37,211,102,0.3)]',
     instagram: 'bg-gradient-to-tr from-[#f09433] via-[#e6683c] to-[#bc1888] shadow-[0_0_10px_rgba(230,104,60,0.3)]',
     facebook: 'bg-[#0866FF] shadow-[0_0_10px_rgba(8,102,255,0.3)]',
+    tiktok: 'bg-black shadow-[0_0_10px_rgba(255,255,255,0.2)]',
   };
 
   return (

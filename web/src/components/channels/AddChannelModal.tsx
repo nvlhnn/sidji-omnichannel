@@ -8,6 +8,7 @@ import {
   MessageCircle, 
   Instagram, 
   Facebook, 
+  Music,
   Zap, 
   Settings, 
   ChevronRight,
@@ -33,6 +34,7 @@ export function AddChannelModal({ onClose, onSuccess, initialType = 'whatsapp' }
   const [businessAccountId, setBusinessAccountId] = useState('');
   const [igUserId, setIgUserId] = useState('');
   const [facebookPageId, setFacebookPageId] = useState('');
+  const [tiktokId, setTiktokId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [discoveryResult, setDiscoveryResult] = useState<{
     facebook_pages: { id: string, name: string }[],
@@ -155,6 +157,7 @@ export function AddChannelModal({ onClose, onSuccess, initialType = 'whatsapp' }
         business_account_id: type === 'whatsapp' ? businessAccountId : undefined,
         ig_user_id: type === 'instagram' ? igUserId : undefined,
         facebook_page_id: type === 'facebook' ? facebookPageId : undefined,
+        tiktok_open_id: type === 'tiktok' ? tiktokId : undefined,
       });
       await api.activateChannel(channel.id);
       onSuccess();
@@ -195,7 +198,8 @@ export function AddChannelModal({ onClose, onSuccess, initialType = 'whatsapp' }
                 {[
                   { id: 'whatsapp', label: 'WhatsApp', icon: MessageCircle, color: 'whatsapp', brand: '#25D366' },
                   { id: 'instagram', label: 'Instagram', icon: Instagram, color: 'instagram', brand: '#E1306C' },
-                  { id: 'facebook', label: 'Facebook', icon: Facebook, color: 'facebook', brand: '#0866FF' }
+                  { id: 'facebook', label: 'Facebook', icon: Facebook, color: 'facebook', brand: '#0866FF' },
+                  { id: 'tiktok', label: 'TikTok', icon: Music, color: 'tiktok', brand: '#000000' }
                 ].map((p) => {
                   const Icon = p.icon;
                   const isActive = type === p.id;
@@ -458,6 +462,20 @@ export function AddChannelModal({ onClose, onSuccess, initialType = 'whatsapp' }
                           value={facebookPageId}
                           onChange={(e) => setFacebookPageId(e.target.value)}
                           placeholder="From Meta Dashboard"
+                          className="input w-full font-mono text-sm bg-[var(--background-secondary)]"
+                        />
+                      </div>
+                    )}
+
+                    {type === 'tiktok' && (
+                      <div className="space-y-1.5 pb-2">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--foreground-muted)] ml-1">TikTok Account ID</label>
+                        <input
+                          type="text"
+                          required
+                          value={tiktokId}
+                          onChange={(e) => setTiktokId(e.target.value)}
+                          placeholder="From TikTok Developer Dashboard"
                           className="input w-full font-mono text-sm bg-[var(--background-secondary)]"
                         />
                       </div>

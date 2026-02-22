@@ -13,7 +13,8 @@ import {
   Facebook,
   Shield,
   Activity,
-  ChevronRight
+  ChevronRight,
+  Music
 } from 'lucide-react';
 import { AddChannelModal } from '@/components/channels/AddChannelModal';
 import Link from 'next/link';
@@ -211,11 +212,14 @@ export default function ChannelsPage() {
                                                     ? 'bg-[#E1306C11] text-[#E1306C]' 
                                                     : channel.type === 'facebook'
                                                         ? 'bg-[#0866FF11] text-[#0866FF]'
-                                                        : 'bg-[#25D36611] text-[#25D366]'
+                                                        : channel.type === 'tiktok'
+                                                            ? 'bg-black/10 text-black dark:bg-white/10 dark:text-white'
+                                                            : 'bg-[#25D36611] text-[#25D366]'
                                                 }`}>
                                                 {channel.type === 'instagram' && <Instagram size={28} />}
                                                 {channel.type === 'facebook' && <Facebook size={28} />}
                                                 {channel.type === 'whatsapp' && <MessageCircle size={28} />}
+                                                {channel.type === 'tiktok' && <Music size={28} />}
                                             </div>
                                             <div className="space-y-1">
                                                 <div className="flex items-center gap-3">
@@ -296,6 +300,10 @@ export default function ChannelsPage() {
                             <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-lg bg-[#0866FF11] text-[#0866FF] flex items-center justify-center"><Facebook size={16}/></div>
                                 <span className="text-xs font-semibold">Facebook Messenger</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-black/10 text-black dark:bg-white/10 dark:text-white flex items-center justify-center"><Music size={16}/></div>
+                                <span className="text-xs font-semibold">TikTok Messages</span>
                             </div>
                         </div>
                     </div>

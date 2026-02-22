@@ -166,7 +166,10 @@ export function SettingsView() {
                   >
                     <div className="flex items-center gap-4">
                       <div className={`w-12 h-12 rounded-lg flex items-center justify-center
-                        ${channel.type === 'whatsapp' ? 'bg-green-500/10 text-green-500' : 'bg-pink-500/10 text-pink-500'}
+                        ${channel.type === 'whatsapp' ? 'bg-green-500/10 text-green-500' : 
+                          channel.type === 'facebook' ? 'bg-blue-500/10 text-blue-500' : 
+                          channel.type === 'tiktok' ? 'bg-black/10 text-black dark:bg-white/10 dark:text-white' :
+                          'bg-pink-500/10 text-pink-500'}
                       `}>
                          {/* Channel Icon Logic - kept simple for brevity */}
                          <span className="capitalize text-xs font-bold">{channel.type.substring(0,2)}</span>

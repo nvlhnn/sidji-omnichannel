@@ -370,6 +370,10 @@ function EmptyState() {
             <div className="w-2 h-2 rounded-full bg-pink-500 shadow-[0_0_8px_rgba(236,72,153,0.5)]" />
             <span className="text-[10px] font-black uppercase tracking-widest text-[var(--foreground-muted)]">Instagram Flow</span>
          </div>
+         <div className="px-4 py-2 glass rounded-xl border-white/5 flex items-center gap-3">
+            <div className="w-2 h-2 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.5)]" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-[var(--foreground-muted)]">TikTok Link</span>
+         </div>
       </div>
     </div>
   );

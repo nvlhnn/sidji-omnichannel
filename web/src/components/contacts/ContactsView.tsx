@@ -128,6 +128,11 @@ export function ContactsView() {
                       FB: {contact.facebook_id}
                     </div>
                   )}
+                  {contact.tiktok_id && (
+                    <div className="px-2 py-1 bg-black/10 dark:bg-white/10 text-black dark:text-white rounded text-xs font-mono">
+                      TT: {contact.tiktok_id}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

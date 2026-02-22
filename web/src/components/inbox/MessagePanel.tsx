@@ -19,7 +19,8 @@ import {
   Instagram,
   Facebook,
   MessageCircle,
-  Hash
+  Hash,
+  Music
 } from 'lucide-react';
 
 interface MessagePanelProps {
@@ -122,6 +123,7 @@ export function MessagePanel({
       case 'whatsapp': return <MessageCircle className="w-4 h-4 text-whatsapp" />;
       case 'instagram': return <Instagram className="w-4 h-4 text-instagram" />;
       case 'facebook': return <Facebook className="w-4 h-4 text-facebook" />;
+      case 'tiktok': return <Music className="w-4 h-4 text-black dark:text-white" />;
       default: return <Hash className="w-4 h-4 text-[var(--foreground-muted)]" />;
     }
   };

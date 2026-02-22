@@ -3,7 +3,7 @@
 import { Conversation } from '@/lib/types';
 import { Avatar } from '../ui/Avatar';
 import { formatDistanceToNow } from '@/lib/utils';
-import { Instagram, Facebook, MessageCircle, Hash, UserCircle } from 'lucide-react';
+import { Instagram, Facebook, MessageCircle, Hash, UserCircle, Music } from 'lucide-react';
 
 interface ConversationListProps {
   conversations: Conversation[];
@@ -65,6 +65,8 @@ export function ConversationList({ conversations, selectedId, onSelect }: Conver
                     absolute -bottom-1 -right-1 p-1 rounded-full shadow-lg border-2 border-[var(--background)]
                     ${conversation.channel.type === 'whatsapp' ? 'bg-[#25D366]' : 
                       conversation.channel.type === 'instagram' ? 'bg-[#E1306C]' : 
+                      conversation.channel.type === 'facebook' ? 'bg-[#0866FF]' :
+                      conversation.channel.type === 'tiktok' ? 'bg-black dark:bg-white' :
                       'bg-[#0866FF]'}
                 `}>
                   <ChannelIcon type={conversation.channel.type} />
@@ -138,6 +140,7 @@ function ChannelIcon({ type }: { type: string }) {
         case 'whatsapp': return <MessageCircle {...props} />;
         case 'instagram': return <Instagram {...props} />;
         case 'facebook': return <Facebook {...props} />;
+        case 'tiktok': return <Music {...props} />;
         default: return <Hash {...props} />;
     }
 }

@@ -16,6 +16,7 @@
   --color-whatsapp: var(--whatsapp);
   --color-instagram: var(--instagram);
   --color-facebook: var(--facebook);
+  --color-tiktok: var(--tiktok);
   
   --color-success: var(--success);
   --color-warning: var(--warning);
@@ -54,6 +55,7 @@
   --whatsapp: #25D366;
   --instagram: #E1306C;
   --facebook: #0866FF;
+  --tiktok: #000000;
   
   /* Status Colors */
   --success: #10b981;

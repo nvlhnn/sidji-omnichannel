@@ -149,6 +149,7 @@ class ApiClient {
         phone_number_id?: string;
         ig_user_id?: string;
         facebook_page_id?: string;
+        tiktok_open_id?: string;
         business_account_id?: string;
     }): Promise<Channel> {
         return this.request<Channel>('/channels', {
