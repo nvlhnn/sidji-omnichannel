@@ -11,4 +11,5 @@ type AuthService interface {
 	Login(input *models.LoginInput) (*models.AuthResponse, error)
 	GetUserByID(userID uuid.UUID) (*models.User, error)
 	GetMe(userID uuid.UUID) (*models.AuthResponse, error)
+	GoogleLogin(info *models.GoogleUserInfo) (*models.AuthResponse, error)
 }

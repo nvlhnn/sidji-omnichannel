@@ -108,7 +108,7 @@ func main() {
 	}
 
 	// Initialize handlers
-	authHandler := handlers.NewAuthHandler(authService)
+	authHandler := handlers.NewAuthHandler(authService, cfg)
 	conversationHandler := handlers.NewConversationHandler(conversationService, messageService, channelService, contactService, aiService, hub)
 	webhookHandler := handlers.NewWebhookHandler(cfg, channelService, contactService, conversationService, messageService, mediaService, aiService, hub) // Inject MediaService & AIService
 	wsHandler := handlers.NewWebSocketHandler(hub)
@@ -147,6 +147,8 @@ func main() {
 		{
 			auth.POST("/register", authHandler.Register)
 			auth.POST("/login", authHandler.Login)
+			auth.GET("/google/login", authHandler.GoogleLogin)
+			auth.POST("/google/callback", authHandler.GoogleCallback)
 		}
 
 		// Webhook routes (public but verified)

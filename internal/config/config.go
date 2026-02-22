@@ -15,6 +15,7 @@ type Config struct {
 	TikTok   TikTokConfig
 	AWS      AWSConfig
 	AI       AIConfig
+	Google   GoogleConfig
 }
 
 
@@ -58,6 +59,12 @@ type AIConfig struct {
 	GeminiAPIKey string
 	OpenAIAPIKey string
 	Provider     string // "gemini" or "openai"
+}
+
+type GoogleConfig struct {
+	ClientID     string
+	ClientSecret string
+	RedirectURI  string
 }
 
 type TikTokConfig struct {
@@ -111,6 +118,11 @@ func Load() (*Config, error) {
 			GeminiAPIKey: getEnv("GEMINI_API_KEY", ""),
 			OpenAIAPIKey: getEnv("OPENAI_API_KEY", ""),
 			Provider:     getEnv("AI_PROVIDER", "gemini"),
+		},
+		Google: GoogleConfig{
+			ClientID:     getEnv("GOOGLE_CLIENT_ID", ""),
+			ClientSecret: getEnv("GOOGLE_CLIENT_SECRET", ""),
+			RedirectURI:  getEnv("GOOGLE_REDIRECT_URI", ""),
 		},
 	}, nil
 }

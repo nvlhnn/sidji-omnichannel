@@ -25,7 +25,7 @@ func TestAuthHandler_Register(t *testing.T) {
 
 	cfg := testutil.TestConfig()
 	authService := services.NewAuthService(postgres.NewAuthRepository(db), cfg)
-	handler := NewAuthHandler(authService)
+	handler := NewAuthHandler(authService, nil)
 
 	tests := []struct {
 		name         string
@@ -97,7 +97,7 @@ func TestAuthHandler_Login(t *testing.T) {
 
 	cfg := testutil.TestConfig()
 	authService := services.NewAuthService(postgres.NewAuthRepository(db), cfg)
-	handler := NewAuthHandler(authService)
+	handler := NewAuthHandler(authService, nil)
 
 	// Create a user first
 	_, err := authService.Register(&models.RegisterInput{
@@ -184,7 +184,7 @@ func TestAuthHandler_Me(t *testing.T) {
 
 	cfg := testutil.TestConfig()
 	authService := services.NewAuthService(postgres.NewAuthRepository(db), cfg)
-	handler := NewAuthHandler(authService)
+	handler := NewAuthHandler(authService, nil)
 
 	// Create a user
 	result, err := authService.Register(&models.RegisterInput{

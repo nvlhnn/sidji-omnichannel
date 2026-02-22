@@ -208,3 +208,83 @@ func (s *AuthService) GetMe(userID uuid.UUID) (*models.AuthResponse, error) {
 		Organization: org,
 	}, nil
 }
+
+// GoogleLogin handles user login or registration via Google OAuth
+func (s *AuthService) GoogleLogin(info *models.GoogleUserInfo) (*models.AuthResponse, error) {
+	// 1. Try to fetch user by email
+	user, org, err := s.repo.GetAuthDataByEmail(info.Email)
+	
+	if err == repository.ErrNotFound {
+		// User doesn't exist yet, we must auto-register them
+		// Generate random secure password, as they login via Google
+		hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(uuid.New().String()), bcrypt.DefaultCost)
+		
+		orgName := info.GivenName + "'s Workspace"
+		if info.GivenName == "" {
+			orgName = info.Name + "'s Workspace"
+		}
+
+		org = &models.Organization{
+			ID:                 uuid.New(),
+			Name:               orgName,
+			Slug:               generateSlug(orgName),
+			Plan:               "starter",
+			SubscriptionStatus: "active",
+			AICreditsLimit:     10,
+			AICreditsUsed:      0,
+			BillingCycleStart:  time.Now(),
+			CreatedAt:          time.Now(),
+			UpdatedAt:          time.Now(),
+			MessageUsageLimit:  1000,
+			MessageUsageUsed:   0,
+		}
+
+		user = &models.User{
+			ID:             uuid.New(),
+			OrganizationID: org.ID,
+			Email:          info.Email,
+			PasswordHash:   string(hashedPassword),
+			Name:           info.Name,
+			Role:           models.RoleAdmin,
+			Status:         models.StatusOffline,
+			AvatarURL:      info.Picture,
+		}
+
+		if err := s.repo.CreateRegisterTransaction(org, user); err != nil {
+			return nil, err
+		}
+
+		// Initial compliance
+		org.UserCount = 1
+		org.ChannelCount = 0
+		org.IsOverLimit = false
+	} else if err != nil {
+		return nil, err
+	} else {
+		// User already exists, update their last seen and avatar
+		_ = s.repo.UpdateLastSeen(user.ID)
+		
+		// If they don't have an avatar but Google provided one, we could update it
+		// For simplicity, we just fetch counts for compliance
+		userCount, channelCount, err := s.repo.GetOrganizationCounts(org.ID)
+		if err == nil {
+			org.UserCount = userCount
+			org.ChannelCount = channelCount
+			org.IsOverLimit = !subscription.IsCompliance(org.Plan, org.UserCount, org.ChannelCount)
+		}
+	}
+
+	// Generate token
+	token, expiresIn, err := s.generateToken(user)
+	if err != nil {
+		return nil, err
+	}
+
+	return &models.AuthResponse{
+		User:         user.ToPublic(),
+		Organization: org,
+		AccessToken:  token,
+		ExpiresIn:    expiresIn,
+	}, nil
+}
+

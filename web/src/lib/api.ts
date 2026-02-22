@@ -81,6 +81,19 @@ class ApiClient {
         this.setToken(null);
     }
 
+    async getGoogleLoginUrl(): Promise<{ url: string }> {
+        return this.request<{ url: string }>('/auth/google/login');
+    }
+
+    async loginWithGoogle(code: string): Promise<AuthResponse> {
+        const response = await this.request<AuthResponse>('/auth/google/callback', {
+            method: 'POST',
+            body: JSON.stringify({ code }),
+        });
+        this.setToken(response.access_token);
+        return response;
+    }
+
     // Conversations
     async getConversations(filter?: ConversationFilter): Promise<PaginatedResponse<Conversation>> {
         const params = new URLSearchParams();
