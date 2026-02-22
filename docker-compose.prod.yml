@@ -31,6 +31,11 @@ services:
           memory: 128M
     networks:
       - sidji-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # ============================================
   # Next.js Frontend
@@ -67,6 +72,11 @@ services:
           memory: 128M
     networks:
       - sidji-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # ============================================
   # Nginx Reverse Proxy (SSL via Cloudflare Origin Cert)
@@ -93,6 +103,11 @@ services:
           memory: 32M
     networks:
       - sidji-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
   sidji-network:
